@@ -179,6 +179,24 @@ class Message:
         ).strip("_")
         return patch_name
 
+    def generate_patch(self):
+        """Generate something resembling a .patch file"""
+        template = """Date: {date}
+From: {sender}
+To: {to}
+Subject: {subject}
+Message-Id: {message_id}
+
+{body}"""
+        return template.format(
+            date=self.timestamp,
+            sender=self.sender,
+            to=self.to,
+            subject=self.subject,
+            message_id=self.message_id,
+            body=self.body,
+        )
+
     def short_summary(self):
         """Machine readable summary in YYYY.DD URL subject format"""
         return f"[{self.timestamp.year}.{self.timestamp.month:02d}] {self.thread_url} {self.subject} "
