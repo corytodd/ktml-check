@@ -1,0 +1,12 @@
+repos:
+  - repo: https://github.com/pycqa/isort
+    rev: c5e8fa75dda5f764d20f66a215d71c21cfa198e1 # tag: 5.10.1
+    hooks:
+    - name: isort
+      id: isort
+      args: ["."]
+  - repo: https://github.com/psf/black
+    rev: f6c139c5215ce04fd3e73a900f1372942d58eca0 # tag: 22.6.0
+    hooks:
+    - name: black
+      id: black
