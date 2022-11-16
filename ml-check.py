@@ -122,6 +122,8 @@ def periodic_mail_steps(start, end=datetime.datetime.utcnow()):
 
 @dataclass
 class Message:
+    """Simplified email representation"""
+
     subject: str
     message_id: str
     in_reply_to: str
@@ -324,7 +326,7 @@ class KTeamMbox:
         suspected of needing additional review.
         """
 
-        # Unfortunately mbox is not associative so no matter how slice it,
+        # Unfortunately mbox is not associative so no matter how we slice it,
         # we need to make our own associative mapping of message_id<>messages.
         # Do this first so we can build our thread map during a second iteration.
         message_map = {}
@@ -362,14 +364,44 @@ class KTeamMbox:
             yield root_message, thread
 
 
-def main(weeks_back, clear_cache):
+def main(weeks_back, patch_output, clear_cache):
+    """Run mailing list checker
+    :param weeks_back: int how many weeks back from today to scan
+    :param patch_output: str if specified, emit .patches to this directory
+    :param clear_cache: bool delete local cache (will force download all new mail)
+    """
     kteam = KTeamMbox()
     kteam.fetch_mail(weeks_back, clear_cache)
 
-    # Print from oldest to newest
+    if patch_output:
+        # Ensure patch output directory exists and is clean
+        patch_output = os.path.expanduser(patch_output)
+        if os.path.exists(patch_output):
+            shutil.rmtree(patch_output)
+        os.mkdir(patch_output)
+
+    # Prints from oldest to newest
     needs_review = kteam.needing_review()
-    for patch, _ in sorted(needs_review):
+    for patch, thread in sorted(needs_review):
         print(patch.short_summary())
+
+        if patch_output:
+            # The cover letter subject determines the subdirectory name
+            patch_dir = os.path.join(patch_output, patch.generate_patch_name())
+            os.mkdir(patch_dir)
+
+            # A patch may have multiple parts so filter out the other responses
+            # and dump only the patches.
+            for part in thread:
+
+                if part.is_ack() or part.is_nak():
+                    continue
+
+                patch_file = os.path.join(
+                    patch_dir, f"{part.generate_patch_name()}.patch"
+                )
+                with open(patch_file, "w") as f:
+                    f.write(part.generate_patch())
 
     return 0
 
@@ -390,6 +422,12 @@ if __name__ == "__main__":
         "--clear-cache", action="store_true", help="Clear local ml-check cache"
     )
     parser.add_argument(
+        "-p",
+        "--patch-output",
+        help="Dump patches to a file named $COVER_LETTER_SUBJECT/$PATCH_SUBJECT.patch in this directory"
+        + "Any patch existing in this location will be deleted.",
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true", help="Print more debug information"
     )
     args = parser.parse_args()
@@ -399,7 +437,7 @@ if __name__ == "__main__":
 
     ret = 1
     try:
-        ret = main(args.weeks_back, args.clear_cache)
+        ret = main(args.weeks_back, args.patch_output, args.clear_cache)
     except BaseException as ex:
         logger.error(ex)
     sys.exit(ret)
