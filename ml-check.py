@@ -439,5 +439,5 @@ if __name__ == "__main__":
     try:
         ret = main(args.weeks_back, args.patch_output, args.clear_cache)
     except BaseException as ex:
-        logger.error(ex)
+        logger.exception(ex)
     sys.exit(ret)
