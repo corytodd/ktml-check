@@ -59,6 +59,15 @@ RE_PATCH = re.compile(
     re.IGNORECASE,
 )
 
+# Strict means that we want angle brackets as seen in Acked-by and SOB lines
+# Use this when the content might not contain any email addresses.
+RE_EMAIL_STRICT = r"<([^\s\\]+)\sat\s([^\s\\]+)>"
+
+# Loose means we know this is a valid email
+RE_EMAIL_LOOSE = re.compile(
+    r"([^\s\\]+)\sat\s([^\s\\]+)\s\(([^\s\\]\s?)+\)", re.IGNORECASE
+)
+
 
 logger = logging.getLogger("ml-check")
 logger.addHandler(logging.StreamHandler())
@@ -120,6 +129,33 @@ def periodic_mail_steps(start, end=datetime.datetime.utcnow()):
             yield (year, month)
 
 
+def demangle_email(raw, strict_mode=False):
+    """Mailman replaces user@example.com with user at example.com for all message fields. This function
+    reverses that operation.
+    :param raw: str content to demangle
+    :param strict_mode: bool True to treat as a replacement operation on content that
+    is not guaranteed to contain mangled email addresses, e.g. a message body. Set this
+    to false if you are parsing the From header.
+    """
+    result = raw
+    if raw:
+
+        def replacer(m):
+            result = ""
+            if m:
+                parts = m.groups()
+                if len(parts) >= 2:
+                    result = "@".join(parts[:2])
+            return result
+
+        if strict_mode:
+            result = re.sub(RE_EMAIL_STRICT, replacer, raw)
+        else:
+            m = RE_EMAIL_LOOSE.match(raw)
+            result = replacer(m)
+    return result
+
+
 @dataclass
 class Message:
     """Simplified email representation"""
@@ -147,6 +183,9 @@ class Message:
         timestamp = parse_mail_date(mail.get("Date"))
         references = parse_mail_references(mail.get("References"))
 
+        body = demangle_email(mail.get_payload(), strict_mode=True)
+        sender = demangle_email(mail.get("From"))
+
         message = None
         if subject is not None and timestamp is not None:
             subject = subject.replace("\n", " ").replace("\t", " ").replace("  ", " ")
@@ -156,8 +195,8 @@ class Message:
                 in_reply_to=in_reply_to,
                 references=references,
                 timestamp=timestamp,
-                body=mail.get_payload(),
-                sender=mail.get("From"),
+                body=body,
+                sender=sender,
             )
         else:
             # Show some details about the message including a truncated body
