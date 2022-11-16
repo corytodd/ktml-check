@@ -324,6 +324,7 @@ class KTeamMbox:
             if len(acks) >= 2:
                 continue
 
+            thread = threads.subgraph(thread)
             yield root_message, thread
 
 
