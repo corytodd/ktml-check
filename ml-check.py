@@ -131,7 +131,6 @@ class Message:
     timestamp: datetime.datetime
     body: str
     sender: str
-    to: str
 
     @property
     def thread_url(self):
@@ -159,7 +158,6 @@ class Message:
                 timestamp=timestamp,
                 body=mail.get_payload(),
                 sender=mail.get("From"),
-                to=mail.get("To"),
             )
         else:
             # Show some details about the message including a truncated body
@@ -185,7 +183,6 @@ class Message:
         """Generate something resembling a .patch file"""
         template = """Date: {date}
 From: {sender}
-To: {to}
 Subject: {subject}
 Message-Id: {message_id}
 
@@ -193,7 +190,6 @@ Message-Id: {message_id}
         return template.format(
             date=self.timestamp,
             sender=self.sender,
-            to=self.to,
             subject=self.subject,
             message_id=self.message_id,
             body=self.body,
