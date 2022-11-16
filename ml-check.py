@@ -127,6 +127,9 @@ class Message:
     in_reply_to: str
     references: set
     timestamp: datetime.datetime
+    body: str
+    sender: str
+    to: str
 
     @property
     def thread_url(self):
@@ -152,6 +155,9 @@ class Message:
                 in_reply_to=in_reply_to,
                 references=references,
                 timestamp=timestamp,
+                body=mail.get_payload(),
+                sender=mail.get("From"),
+                to=mail.get("To"),
             )
         else:
             # Show some details about the message including a truncated body
