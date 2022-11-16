@@ -170,13 +170,14 @@ class Message:
 
     def is_ack(self):
         """Returns true if this email looks like an ACK"""
-        return self.subject is not None and self.subject.lower().startswith("ack:")
+        return self.subject is not None and self.subject.lower().startswith("ack")
 
     def is_nak(self):
         """Returns true if this email looks like a NAK"""
         return self.subject is not None and (
+            # Yup, NAC/NAK/NAC K seems to come in many flavors
             self.subject.lower().startswith("nak")
-            or self.subject.lower().startswith("nack")
+            or self.subject.lower().startswith("nac")
         )
 
     def is_patch(self):
