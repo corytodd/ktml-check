@@ -364,8 +364,8 @@ if __name__ == "__main__":
         logger.setLevel(logging.DEBUG)
 
     ret = 1
-    # try:
-    ret = main(args.weeks_back, args.clear_cache)
-    # except BaseException as ex:
-    #    logger.error(ex)
+    try:
+        ret = main(args.weeks_back, args.clear_cache)
+    except BaseException as ex:
+        logger.error(ex)
     sys.exit(ret)
