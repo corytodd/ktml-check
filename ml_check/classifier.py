@@ -16,7 +16,7 @@ from enum import Enum
 from typing import List
 
 RE_PATCH = re.compile(
-    r"\[patch|applied:|ack:|re:|nak:|ack\/cmnt:|nak\/cmnt:|ubuntu:|pull",
+    r"\[?(patch|sru|ubuntu|pull)",
     re.IGNORECASE,
 )
 
@@ -55,7 +55,7 @@ class SimpleClassifier(MessageClassifier):
 
     def get_category(self, message) -> Category:
         subject = message.subject
-        is_patch = subject is not None and len(re.findall(RE_PATCH, subject)) > 0
+        is_patch = subject is not None and re.match(RE_PATCH, subject)
         is_epoch = message.in_reply_to is None
         is_ack = subject is not None and subject.lower().startswith("ack")
         is_nak = subject is not None and (
