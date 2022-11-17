@@ -29,6 +29,7 @@ import logging
 import os
 import shutil
 import sys
+from datetime import datetime, timezone
 
 from ml_check.kteam_mbox import KTeamMbox
 from ml_check.logging import logger
@@ -46,6 +47,22 @@ def save_patch_set(out_directory, patch_set):
         patch_file = os.path.join(patch_dir, f"{patch.generate_patch_name()}.patch")
         with open(patch_file, "w") as f:
             f.write(patch.generate_patch())
+
+    # Generate a summary text file showing reply stats
+    age_days = (datetime.now(timezone.utc) - patch_set.epoch_patch.timestamp).days
+    patch_count = len(patch_set.patches)
+    ack_count = len(patch_set.acks)
+    nak_count = len(patch_set.naks)
+    applied_count = len(patch_set.applieds)
+
+    summary_file = os.path.join(patch_dir, "summary.txt")
+    with open(summary_file, "w") as f:
+        f.write(f"{patch_set.epoch_patch.subject}\n")
+        f.write(f"age: {age_days} days\n")
+        f.write(f"size: {patch_count} patches\n")
+        f.write(f"acks: {ack_count}\n")
+        f.write(f"naks: {nak_count}\n")
+        f.write(f"applied: {applied_count > 0}\n")
 
 
 def main(weeks_back, patch_output, clear_cache):
