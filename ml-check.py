@@ -34,6 +34,28 @@ from ml_check.kteam_mbox import KTeamMbox
 from ml_check.logging import logger
 
 
+def save_patch_set(out_directory, first_patch, thread):
+    """Write a patch set to disk as a patch files
+    :param out_directory: str write results to this directory
+    :param first_patch: Message representing first patch
+    :param thread: list(Message) full email thread for this patch
+    """
+    # The cover letter subject determines the subdirectory name
+    patch_dir = os.path.join(out_directory, first_patch.generate_patch_name())
+    os.mkdir(patch_dir)
+
+    # A patch may have multiple parts so filter out the other responses
+    # and dump only the patches.
+    for part in thread:
+
+        if part.is_ack() or part.is_nak():
+            continue
+
+        patch_file = os.path.join(patch_dir, f"{part.generate_patch_name()}.patch")
+        with open(patch_file, "w") as f:
+            f.write(part.generate_patch())
+
+
 def main(weeks_back, patch_output, clear_cache):
     """Run mailing list checker
     :param weeks_back: int how many weeks back from today to scan
@@ -53,25 +75,11 @@ def main(weeks_back, patch_output, clear_cache):
     # Prints from oldest to newest
     needs_review = kteam.needing_review()
     for patch, thread in sorted(needs_review):
+
         print(patch.short_summary())
 
         if patch_output:
-            # The cover letter subject determines the subdirectory name
-            patch_dir = os.path.join(patch_output, patch.generate_patch_name())
-            os.mkdir(patch_dir)
-
-            # A patch may have multiple parts so filter out the other responses
-            # and dump only the patches.
-            for part in thread:
-
-                if part.is_ack() or part.is_nak():
-                    continue
-
-                patch_file = os.path.join(
-                    patch_dir, f"{part.generate_patch_name()}.patch"
-                )
-                with open(patch_file, "w") as f:
-                    f.write(part.generate_patch())
+            save_patch_set(patch_output, patch, thread)
 
     return 0
 
