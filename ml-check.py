@@ -44,13 +44,7 @@ def save_patch_set(out_directory, first_patch, thread):
     patch_dir = os.path.join(out_directory, first_patch.generate_patch_name())
     os.mkdir(patch_dir)
 
-    # A patch may have multiple parts so filter out the other responses
-    # and dump only the patches.
     for part in thread:
-
-        if part.is_ack() or part.is_nak():
-            continue
-
         patch_file = os.path.join(patch_dir, f"{part.generate_patch_name()}.patch")
         with open(patch_file, "w") as f:
             f.write(part.generate_patch())

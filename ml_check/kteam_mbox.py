@@ -9,12 +9,14 @@ import gzip
 import mailbox
 import os
 import shutil
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 import networkx as nx
 import requests
 
 from ml_check import config
+from ml_check.classifier import Category, SimpleClassifier
 from ml_check.logging import logger
 from ml_check.message import Message
 
@@ -117,6 +119,8 @@ class KTeamMbox:
         suspected of needing additional review.
         """
 
+        classifier = SimpleClassifier()
+
         # Unfortunately mbox is not associative so no matter how we slice it,
         # we need to make our own associative mapping of message_id<>messages.
         # Do this first so we can build our thread map during a second iteration.
@@ -139,17 +143,39 @@ class KTeamMbox:
                     threads.add_edge(message, message_map[ref])
 
         for thread in nx.connected_components(threads):
-            # Filter out non-patches, applied patches, naked patches, 2+ACKs
-            root_message = next(filter(lambda t: t.in_reply_to is None, thread), None)
-            if not root_message or not root_message.is_patch():
-                continue
-            if any([t for t in thread if t.is_applied()]):
-                continue
-            if any([t for t in thread if t.is_nak()]):
-                continue
-            acks = [t for t in thread if t.is_ack()]
-            if len(acks) >= 2:
+
+            # Classify each message into category
+            by_category = defaultdict(list)
+            for message in thread:
+                category = classifier.get_category(message)
+                by_category[category].append(message)
+
+            # We someone missed the epoch patch
+            if Category.Patch0 not in by_category:
                 continue
 
-            thread = threads.subgraph(thread)
-            yield root_message, thread
+            # Patch has been applied, skip it
+            if Category.PatchApplied in by_category:
+                continue
+
+            # Patch has been nak'd, skip it
+            if Category.PatchNak in by_category:
+                continue
+
+            # Patch has two or more ack's, skip it
+            if (
+                Category.PatchAck in by_category
+                and len(by_category[Category.PatchAck]) >= 2
+            ):
+                continue
+
+            # Return only the patchs, not any followup messages
+            patch_list = [
+                m
+                for m in thread
+                if classifier.get_category(m) in (Category.Patch0, Category.PatchN)
+            ]
+            patch_list = threads.subgraph(patch_list)
+
+            epoch_patch = by_category[Category.Patch0][0]
+            yield epoch_patch, patch_list

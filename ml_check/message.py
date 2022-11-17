@@ -11,11 +11,6 @@ from datetime import datetime
 from ml_check import config
 from ml_check.logging import logger
 
-RE_PATCH = re.compile(
-    r"\[patch|applied:|ack:|re:|nak:|ack\/cmnt:|nak\/cmnt:|ubuntu:|pull",
-    re.IGNORECASE,
-)
-
 # Strict means that we want angle brackets as seen in Acked-by and SOB lines
 # Use this when the content might not contain any email addresses.
 RE_EMAIL_STRICT = r"<([^\s\\]+)\sat\s([^\s\\]+)>"
@@ -198,27 +193,7 @@ Message-Id: {message_id}
 
     def short_summary(self):
         """Machine readable summary in YYYY.DD URL subject format"""
-        return f"[{self.timestamp.year}.{self.timestamp.month:02d}] {self.thread_url} {self.subject} "
-
-    def is_ack(self):
-        """Returns true if this email looks like an ACK"""
-        return self.subject is not None and self.subject.lower().startswith("ack")
-
-    def is_nak(self):
-        """Returns true if this email looks like a NAK"""
-        return self.subject is not None and (
-            # Yup, NAC/NAK/NAC K seems to come in many flavors
-            self.subject.lower().startswith("nak")
-            or self.subject.lower().startswith("nac")
-        )
-
-    def is_patch(self):
-        """Returns true if this email looks like a patch of some kind"""
-        return self.subject is not None and len(re.findall(RE_PATCH, self.subject)) > 0
-
-    def is_applied(self):
-        """Returns true if this email looks like an APPLIED response"""
-        return self.subject is not None and self.subject.lower().startswith("applied")
+        return f"[{self.timestamp.year}.{self.timestamp.month:02d}] {self.thread_url} {self.subject}"
 
     def __hash__(self):
         """Implement for graph relationship"""
