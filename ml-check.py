@@ -34,20 +34,18 @@ from ml_check.kteam_mbox import KTeamMbox
 from ml_check.logging import logger
 
 
-def save_patch_set(out_directory, first_patch, thread):
+def save_patch_set(out_directory, patch_set):
     """Write a patch set to disk as a patch files
     :param out_directory: str write results to this directory
-    :param first_patch: Message representing first patch
-    :param thread: list(Message) full email thread for this patch
+    :param patch_set: PatchSet
     """
-    # The cover letter subject determines the subdirectory name
-    patch_dir = os.path.join(out_directory, first_patch.generate_patch_name())
+    patch_dir = os.path.join(out_directory, patch_set.epoch_patch.generate_patch_name())
     os.mkdir(patch_dir)
 
-    for part in thread:
-        patch_file = os.path.join(patch_dir, f"{part.generate_patch_name()}.patch")
+    for patch in patch_set.patches:
+        patch_file = os.path.join(patch_dir, f"{patch.generate_patch_name()}.patch")
         with open(patch_file, "w") as f:
-            f.write(part.generate_patch())
+            f.write(patch.generate_patch())
 
 
 def main(weeks_back, patch_output, clear_cache):
@@ -68,12 +66,12 @@ def main(weeks_back, patch_output, clear_cache):
 
     # Prints from oldest to newest
     needs_review = kteam.needing_review()
-    for patch, thread in sorted(needs_review):
+    for patch_set in sorted(needs_review):
 
-        print(patch.short_summary())
+        print(patch_set.epoch_patch.short_summary())
 
         if patch_output:
-            save_patch_set(patch_output, patch, thread)
+            save_patch_set(patch_output, patch_set)
 
     return 0
 

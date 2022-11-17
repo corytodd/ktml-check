@@ -19,6 +19,7 @@ from ml_check import config
 from ml_check.classifier import Category, SimpleClassifier
 from ml_check.logging import logger
 from ml_check.message import Message
+from ml_check.patch_set import PatchSet
 
 
 def periodic_mail_steps(start, end=datetime.utcnow()):
@@ -144,38 +145,22 @@ class KTeamMbox:
 
         for thread in nx.connected_components(threads):
 
-            # Classify each message into category
-            by_category = defaultdict(list)
-            for message in thread:
-                category = classifier.get_category(message)
-                by_category[category].append(message)
+            patch_set = PatchSet(classifier, thread)
 
             # We someone missed the epoch patch
-            if Category.Patch0 not in by_category:
+            if patch_set.epoch_patch is None:
                 continue
 
             # Patch has been applied, skip it
-            if Category.PatchApplied in by_category:
+            if any(patch_set.applieds):
                 continue
 
             # Patch has been nak'd, skip it
-            if Category.PatchNak in by_category:
+            if any(patch_set.naks):
                 continue
 
             # Patch has two or more ack's, skip it
-            if (
-                Category.PatchAck in by_category
-                and len(by_category[Category.PatchAck]) >= 2
-            ):
+            if len(patch_set.acks) >= 2:
                 continue
 
-            # Return only the patchs, not any followup messages
-            patch_list = [
-                m
-                for m in thread
-                if classifier.get_category(m) in (Category.Patch0, Category.PatchN)
-            ]
-            patch_list = threads.subgraph(patch_list)
-
-            epoch_patch = by_category[Category.Patch0][0]
-            yield epoch_patch, patch_list
+            yield patch_set
