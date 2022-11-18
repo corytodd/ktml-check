@@ -119,9 +119,34 @@ class KTeamMbox:
         """Returns a list of patches and their email threads that are
         suspected of needing additional review.
         """
-
         classifier = SimpleClassifier()
 
+        for thread in self.all_threads():
+
+            patch_set = PatchSet(classifier, thread)
+
+            # We someone missed the epoch patch
+            if patch_set.epoch_patch is None:
+                continue
+
+            # Patch has been applied, skip it
+            if any(patch_set.applieds):
+                continue
+
+            # Patch has been nak'd, skip it
+            if any(patch_set.naks):
+                continue
+
+            # Patch has two or more ack's, skip it
+            if len(patch_set.acks) >= 2:
+                continue
+
+            yield patch_set
+
+    def all_threads(self):
+        """Returns all messagse from mailbox in thread form
+        :return: list(Message) in chronological order
+        """
         # Unfortunately mbox is not associative so no matter how we slice it,
         # we need to make our own associative mapping of message_id<>messages.
         # Do this first so we can build our thread map during a second iteration.
@@ -144,23 +169,6 @@ class KTeamMbox:
                     threads.add_edge(message, message_map[ref])
 
         for thread in nx.connected_components(threads):
-
-            patch_set = PatchSet(classifier, thread)
-
-            # We someone missed the epoch patch
-            if patch_set.epoch_patch is None:
-                continue
-
-            # Patch has been applied, skip it
-            if any(patch_set.applieds):
-                continue
-
-            # Patch has been nak'd, skip it
-            if any(patch_set.naks):
-                continue
-
-            # Patch has two or more ack's, skip it
-            if len(patch_set.acks) >= 2:
-                continue
-
-            yield patch_set
+            # Convert to list for deterministic ordering
+            messages = [m for m in thread]
+            yield sorted(messages)
