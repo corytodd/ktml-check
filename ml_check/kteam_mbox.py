@@ -9,8 +9,9 @@ import gzip
 import mailbox
 import os
 import shutil
-from collections import defaultdict
 from datetime import datetime, timedelta
+from enum import Enum
+from typing import Protocol
 
 import networkx as nx
 import requests
@@ -32,6 +33,70 @@ def periodic_mail_steps(start, end=datetime.utcnow()):
         end_month = end.month + 1 if year == end.year else len(calendar.month_name)
         for month in range(start.month, end_month):
             yield (year, month)
+
+
+class PatchFilter(Protocol):
+    def __call__(self, patch_set: PatchSet) -> bool:
+        ...
+
+    """Filter accepts a patch set and return true if patch set should be returned
+    """
+
+
+class ReplyTypes(Enum):
+    Default = "default"
+    Ack = "ack"
+    Nak = "nak"
+    Applied = "applied"
+    All = "all"
+
+
+class CustomPatchFilter:
+    def __init__(self, reply_type: ReplyTypes, reply_count: int):
+        logger.debug(
+            f"CustomPatchFilter: reply_type={reply_type}, reply_count={reply_count}"
+        )
+        self.reply_type = reply_type
+        self.reply_count = reply_count
+
+    def apply(self, patch_set: PatchSet) -> bool:
+        if self.reply_type == ReplyTypes.Default:
+            return DefaultPatchFilter(patch_set)
+        # ignore non-patches
+        if patch_set.epoch_patch is None:
+            return False
+        if self.reply_type == ReplyTypes.All:
+            return True
+        if self.reply_type == ReplyTypes.Ack:
+            return patch_set.count_of(Category.PatchAck) == self.reply_count
+        if self.reply_type == ReplyTypes.Nak:
+            return patch_set.count_of(Category.PatchNak) > 0
+        if self.reply_type == ReplyTypes.Applied:
+            return patch_set.count_of(Category.PatchApplied) > 0
+        return True
+
+
+def DefaultPatchFilter(patch_set: PatchSet) -> bool:
+    """Default filter returns unapplied patches with no naks and less than 2 acks"""
+    accept = True
+
+    # We someone missed the epoch patch
+    if patch_set.epoch_patch is None:
+        accept = False
+
+    # Patch has been applied, skip it
+    elif any(patch_set.applieds):
+        accept = False
+
+    # Patch has been nak'd, skip it
+    elif any(patch_set.naks):
+        accept = False
+
+    # Patch has two or more ack's, skip it
+    elif len(patch_set.acks) >= 2:
+        accept = False
+
+    return accept
 
 
 class KTeamMbox:
