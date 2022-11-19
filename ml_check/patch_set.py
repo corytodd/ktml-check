@@ -29,6 +29,11 @@ class PatchSet:
         matches = list(filter(lambda m: m is not None, matches))
         return sorted(matches)
 
+    @property
+    def all_messages(self):
+        """Returns all messages from the thread for this patch set"""
+        return self.thread
+
     @cached_property
     def epoch_patch(self) -> Optional[Message]:
         """Epoch (first patch) for this thread"""
@@ -60,6 +65,17 @@ class PatchSet:
     def applieds(self) -> List[Message]:
         """All APPLIED responses for this patch set in chronological ordser"""
         return self.filter_thread(self.classifier, self.thread, Category.PatchApplied)
+
+    def count_of(self, category: Category):
+        """Returns the count of replies for this category"""
+        count = 0
+        if Category.PatchAck in category:
+            count += len(self.acks)
+        if Category.PatchNak in category:
+            count += len(self.naks)
+        if Category.PatchApplied in category:
+            count += len(self.applieds)
+        return count
 
     def __lt__(self, other):
         """Sort by natural ordering of message"""
