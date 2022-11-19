@@ -144,7 +144,7 @@ class Message:
         sender = demangle_email(mail.get("From"))
 
         message = None
-        if subject is not None and timestamp is not None:
+        if message_id is not None and subject is not None and timestamp is not None:
             subject = subject.replace("\n", " ").replace("\t", " ").replace("  ", " ")
             message = Message(
                 subject=subject,
