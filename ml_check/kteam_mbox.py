@@ -180,7 +180,7 @@ class KTeamMbox:
         active_mbox.flush()
         return active_mbox
 
-    def needing_review(self):
+    def filter_patches(self, patch_filter: PatchFilter = DefaultPatchFilter):
         """Returns a list of patches and their email threads that are
         suspected of needing additional review.
         """
@@ -190,23 +190,8 @@ class KTeamMbox:
 
             patch_set = PatchSet(classifier, thread)
 
-            # We someone missed the epoch patch
-            if patch_set.epoch_patch is None:
-                continue
-
-            # Patch has been applied, skip it
-            if any(patch_set.applieds):
-                continue
-
-            # Patch has been nak'd, skip it
-            if any(patch_set.naks):
-                continue
-
-            # Patch has two or more ack's, skip it
-            if len(patch_set.acks) >= 2:
-                continue
-
-            yield patch_set
+            if patch_filter(patch_set):
+                yield patch_set
 
     def all_threads(self):
         """Returns all messagse from mailbox in thread form

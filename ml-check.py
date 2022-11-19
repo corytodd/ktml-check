@@ -31,7 +31,7 @@ import shutil
 import sys
 from datetime import datetime, timezone
 
-from ml_check.kteam_mbox import KTeamMbox
+from ml_check.kteam_mbox import CustomPatchFilter, KTeamMbox, ReplyTypes
 from ml_check.logging import logger
 
 
@@ -65,9 +65,11 @@ def save_patch_set(out_directory, patch_set):
         f.write(f"applied: {applied_count > 0}\n")
 
 
-def main(weeks_back, patch_output, clear_cache):
+def main(weeks_back, patch_output, reply_type, reply_count, clear_cache):
     """Run mailing list checker
     :param weeks_back: int how many weeks back from today to scan
+    :param reply_type: str which types of replies to dump
+    :param reply_count: int if reply_type == "ack" dump patches with this many of that type
     :param patch_output: str if specified, emit .patches to this directory
     :param clear_cache: bool delete local cache (will force download all new mail)
     """
@@ -81,12 +83,11 @@ def main(weeks_back, patch_output, clear_cache):
             shutil.rmtree(patch_output)
         os.mkdir(patch_output)
 
+    patch_filter = CustomPatchFilter(reply_type, reply_count)
+
     # Prints from oldest to newest
-    needs_review = kteam.needing_review()
-    for patch_set in sorted(needs_review):
-
-        print(patch_set.epoch_patch.short_summary())
-
+    patch_sets = kteam.filter_patches(patch_filter.apply)
+    for patch_set in sorted(patch_sets):
         if patch_output:
             save_patch_set(patch_output, patch_set)
 
@@ -115,6 +116,20 @@ if __name__ == "__main__":
         + "Any patch existing in this location will be deleted.",
     )
     parser.add_argument(
+        "--all", action="store_true", help="Dump all patches regardless of review state"
+    )
+    parser.add_argument(
+        "--naks",
+        action="store_true",
+        help="Dump all patches that have at least one nak",
+    )
+    parser.add_argument(
+        "--applied", action="store_true", help="Dump all patches that have been applied"
+    )
+    parser.add_argument(
+        "--acks", type=int, default=None, help="Dump patches with this many ACKs"
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true", help="Print more debug information"
     )
     args = parser.parse_args()
@@ -122,9 +137,29 @@ if __name__ == "__main__":
     if args.verbose:
         logger.setLevel(logging.DEBUG)
 
+    logger.debug(args)
+
+    reply_type = ReplyTypes.Default
+    reply_count = None
+    if args.all:
+        reply_type = ReplyTypes.All
+    elif args.acks is not None:
+        reply_type = ReplyTypes.Ack
+        reply_count = args.acks
+    elif args.naks:
+        reply_type = ReplyTypes.Nak
+    elif args.applied:
+        reply_type = ReplyTypes.Applied
+
     ret = 1
     try:
-        ret = main(args.weeks_back, args.patch_output, args.clear_cache)
+        ret = main(
+            args.weeks_back,
+            args.patch_output,
+            reply_type,
+            reply_count,
+            args.clear_cache,
+        )
     except BaseException as ex:
         logger.exception(ex)
     sys.exit(ret)
