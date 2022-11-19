@@ -19,7 +19,7 @@ class PatchSet:
 
     @staticmethod
     def filter_thread(
-        classifier: MessageClassifier, thread: List[Message], categories: Set[Category]
+        classifier: MessageClassifier, thread: List[Message], categories: Category
     ) -> List[Message]:
         """Use classifier to filter thread and return sorted result containing only elements of specified category"""
         matches = filter(
@@ -33,7 +33,7 @@ class PatchSet:
     def epoch_patch(self) -> Optional[Message]:
         """Epoch (first patch) for this thread"""
         epoch = next(
-            iter(self.filter_thread(self.classifier, self.thread, {Category.Patch0})),
+            iter(self.filter_thread(self.classifier, self.thread, Category.Patch0)),
             None,
         )
         return epoch
@@ -42,24 +42,24 @@ class PatchSet:
     def patches(self) -> List[Message]:
         """All patches in this thread in chronological order"""
         patches = self.filter_thread(
-            self.classifier, self.thread, {Category.Patch0, Category.PatchN}
+            self.classifier, self.thread, Category.Patch0 | Category.PatchN
         )
         return sorted(patches)
 
     @cached_property
     def acks(self) -> List[Message]:
         """All ACK's for this patch set in chronological order"""
-        return self.filter_thread(self.classifier, self.thread, {Category.PatchAck})
+        return self.filter_thread(self.classifier, self.thread, Category.PatchAck)
 
     @cached_property
     def naks(self) -> List[Message]:
         """All NAK's for this patch set in chronological order"""
-        return self.filter_thread(self.classifier, self.thread, {Category.PatchNak})
+        return self.filter_thread(self.classifier, self.thread, Category.PatchNak)
 
     @cached_property
     def applieds(self) -> List[Message]:
         """All APPLIED responses for this patch set in chronological ordser"""
-        return self.filter_thread(self.classifier, self.thread, {Category.PatchApplied})
+        return self.filter_thread(self.classifier, self.thread, Category.PatchApplied)
 
     def __lt__(self, other):
         """Sort by natural ordering of message"""

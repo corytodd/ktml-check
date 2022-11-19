@@ -12,7 +12,7 @@ attempts at making email classification more reliable.
 
 import re
 from abc import abstractmethod
-from enum import Enum
+from enum import Flag, auto
 from typing import List
 
 RE_PATCH = re.compile(
@@ -21,19 +21,19 @@ RE_PATCH = re.compile(
 )
 
 
-class Category(Enum):
+class Category(Flag):
     # Not a patch, just some noise on the mailing list
-    NotPatch = 0
+    NotPatch = auto()
     # A cover letter or single patch
-    Patch0 = 1
+    Patch0 = auto()
     # The first or subsequent patch after a cover letter
-    PatchN = 2
+    PatchN = auto()
     # An ack to a contextual patch
-    PatchAck = 3
+    PatchAck = auto()
     # A nak to a contextual patch
-    PatchNak = 4
+    PatchNak = auto()
     # Followup stating patch was applied, also contextual
-    PatchApplied = 5
+    PatchApplied = auto()
 
 
 class MessageClassifier:
