@@ -162,6 +162,7 @@ class KTeamMbox:
         # let's not do that.
         threads = nx.Graph()
         for message in message_map.values():
+            threads.add_node(message)
             if message.in_reply_to in message_map:
                 threads.add_edge(message, message_map[message.in_reply_to])
             for ref in message.references:
