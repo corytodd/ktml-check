@@ -12,7 +12,6 @@ import shutil
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from enum import Enum
-from fcntl import LOCK_EX, LOCK_NB, LOCK_UN, lockf
 from typing import Protocol
 
 import networkx as nx
@@ -104,12 +103,13 @@ def DefaultPatchFilter(patch_set: PatchSet) -> bool:
 @contextmanager
 def safe_mbox(mbox_path):
     """Allow using with semantics for mbox files"""
-    with open(mbox_path + ".lock", "w") as lockfd:
-        lockf(lockfd, LOCK_EX, 0)
+    mbox = None
+    try:
         mbox = mailbox.mbox(mbox_path)
         yield mbox
-        lockf(lockfd, LOCK_UN, 1, 0)
-        mbox.close()
+    finally:
+        if mbox is not None:
+            mbox.close()
 
 
 class KTeamMbox:
