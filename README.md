@@ -10,7 +10,9 @@ to your local directory. The patches are valid can be directly applied to your
 target git tree. There are still some rough edges when dealing with replies and 
 certain types of cover letters.
 
-By default, we look for any patch that needs acks and has not been nak'd or applied.
+By default, we look for any patch that needs acks and has not been nak'd or applied. For each patchset, a folder matching the name of the first
+patch is created and all patches will be dumped here. Also included is a 
+file called series which enumerates the path to each patch in order.
 
 ## Setup
 

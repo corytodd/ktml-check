@@ -45,10 +45,16 @@ def save_patch_set(out_directory, patch_set):
     patch_dir = os.path.join(out_directory, patch_set.epoch_patch.generate_patch_name())
     os.mkdir(patch_dir)
 
-    for patch in patch_set.patches:
-        patch_file = os.path.join(patch_dir, f"{patch.generate_patch_name()}.patch")
-        with open(patch_file, "w") as f:
-            f.write(patch.generate_patch())
+    # A newline delimited filter containing patch patches
+    series_file_path = os.path.join(patch_dir, "series")
+
+    with open(series_file_path, "w") as series:
+        for patch in patch_set.patches:
+            patch_file = os.path.join(patch_dir, f"{patch.generate_patch_name()}.patch")
+            with open(patch_file, "w") as f:
+                f.write(patch.generate_patch())
+            if patch.category == Category.PatchN:
+                series.write(f"{patch_file}\n")
 
     # Generate a summary text file showing reply stats
     age_days = (datetime.now(timezone.utc) - patch_set.epoch_patch.timestamp).days
