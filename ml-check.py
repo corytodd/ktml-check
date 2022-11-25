@@ -58,6 +58,8 @@ def save_patch_set(out_directory, patch_set):
     summary_file = os.path.join(patch_dir, "summary.txt")
     with open(summary_file, "w") as f:
         f.write(f"{patch_set.epoch_patch.subject}\n")
+        f.write(f"owner: {patch_set.epoch_patch.sender}\n")
+        f.write(f"link: {patch_set.epoch_patch.thread_url}\n")
         f.write(f"age: {age_days} days\n")
         f.write(f"size: {patch_count} patches\n")
         f.write(f"acks: {ack_count}\n")
