@@ -32,9 +32,9 @@ RE_PATCH = re.compile(
 class Category(Flag):
     # Not a patch, could be a reply or just noise
     NotPatch = auto()
-    # A cover letter or single patch
-    Patch0 = auto()
-    # The first or subsequent patch after a cover letter
+    # A cover letter
+    PatchCoverLetter = auto()
+    # A single patch or Nth patch in a series
     PatchN = auto()
     # An ack to a contextual patch
     PatchAck = auto()
@@ -81,7 +81,7 @@ class SimpleClassifier(MessageClassifier):
             return Category.PatchAck
         if is_patch:
             if is_epoch:
-                return Category.Patch0
+                return Category.PatchCoverLetter
             return Category.PatchN
 
         return Category.NotPatch

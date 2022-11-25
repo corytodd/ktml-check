@@ -29,8 +29,8 @@ class TestClassifier(BaseTest):
             cat_count[category] += 1
 
         # Assert
-        self.assertEqual(cat_count[Category.Patch0], 1)
-        self.assertEqual(cat_count[Category.PatchN], 0)
+        self.assertEqual(cat_count[Category.PatchCoverLetter], 0)
+        self.assertEqual(cat_count[Category.PatchN], 1)
         self.assertEqual(cat_count[Category.PatchNak], 1)
         self.assertEqual(cat_count[Category.PatchAck], 0)
         self.assertEqual(cat_count[Category.NotPatch], 2)
@@ -49,7 +49,7 @@ class TestClassifier(BaseTest):
             cat_count[category] += 1
 
         # Assert
-        self.assertEqual(cat_count[Category.Patch0], 1)
+        self.assertEqual(cat_count[Category.PatchCoverLetter], 1)
         self.assertEqual(cat_count[Category.PatchN], 4)
         self.assertEqual(cat_count[Category.PatchNak], 0)
         self.assertEqual(cat_count[Category.PatchAck], 1)

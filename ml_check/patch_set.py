@@ -47,7 +47,7 @@ class PatchSet:
     def patches(self) -> List[Message]:
         """All patches in this thread in chronological order"""
         patches = self.filter_thread(
-            self.classifier, self.thread, Category.Patch0 | Category.PatchN
+            self.classifier, self.thread, Category.PatchCoverLetter | Category.PatchN
         )
         return sorted(patches)
 
