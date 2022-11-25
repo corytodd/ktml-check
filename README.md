@@ -2,6 +2,16 @@
 
 Check the kernel-team mailing list for patches that need some lovin' or scoldin'.
 
+Everyone has their own way of monitoring the mailing list. The goal of this tool 
+is to provide a solution that works independently of any particular MUA. 
+
+This tool pulls patches from kernel-team mailing list and writes them as patch sets
+to your local directory. The patches are valid can be directly applied to your 
+target git tree. There are still some rough edges when dealing with replies and 
+certain types of cover letters.
+
+By default, we look for any patch that needs acks and has not been nak'd or applied.
+
 ## Setup
 
     pip install -r requirements.txt
@@ -10,7 +20,4 @@ Check the kernel-team mailing list for patches that need some lovin' or scoldin'
 
 ## Usage
 
-By default we look back 21 weeks from the current date to find abandoned patches. This is mostly 
-for performance reasons since the email threading algorithm is fairly naive.
-
-    ./ml-check.py
+    ml-check.py [-h] [-d DAYS_BACK] [--clear-cache] [-p PATCH_OUTPUT] [--all] [--naks] [--applied] [--acks ACKS] [-v]
