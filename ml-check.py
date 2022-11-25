@@ -15,7 +15,7 @@ some time.
 Message threading depends on the Message-ID, In-Reply-To, and References headers.
 With these three headers, we can sufficiently thread most messages.
 
-By default, we look at the last 21 weeks of patches. Since a patch always preceeds 
+By default, we look at the last 14 days of patches. Since a patch always preceeds 
 a response, we should never see a false positive due to this caching window.
 
 The monthly txt.gz file is not generated immediately for each message. This means 
@@ -29,8 +29,9 @@ import logging
 import os
 import shutil
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
+from ml_check import config
 from ml_check.kteam_mbox import CustomPatchFilter, KTeamMbox, ReplyTypes
 from ml_check.logging import logger
 
@@ -68,16 +69,17 @@ def save_patch_set(out_directory, patch_set):
         f.write(f"applied: {applied_count > 0}\n")
 
 
-def main(weeks_back, patch_output, reply_type, reply_count, clear_cache):
+def main(days_back, patch_output, reply_type, reply_count, clear_cache):
     """Run mailing list checker
-    :param weeks_back: int how many weeks back from today to scan
+    :param days_back: int how many days back from today to scan
     :param reply_type: str which types of replies to dump
     :param reply_count: int if reply_type == "ack" dump patches with this many of that type
     :param patch_output: str if specified, emit .patches to this directory
     :param clear_cache: bool delete local cache (will force download all new mail)
     """
+    since = datetime.now(tz=timezone.utc) - timedelta(days=days_back)
     kteam = KTeamMbox()
-    kteam.fetch_mail(weeks_back, clear_cache)
+    kteam.fetch_mail(since, clear_cache)
 
     if patch_output:
         # Ensure patch output directory exists and is clean
@@ -86,7 +88,7 @@ def main(weeks_back, patch_output, reply_type, reply_count, clear_cache):
             shutil.rmtree(patch_output)
         os.mkdir(patch_output)
 
-    patch_filter = CustomPatchFilter(reply_type, reply_count)
+    patch_filter = CustomPatchFilter(reply_type, reply_count, after=since)
 
     # Prints from oldest to newest
     patch_sets = kteam.filter_patches(patch_filter.apply)
@@ -107,7 +109,18 @@ if __name__ == "__main__":
         epilog=app_epilog,
     )
     parser.add_argument(
-        "-w", "--weeks-back", default=12, type=int, help="How many weeks back to search"
+        "-w",
+        "--weeks-back",
+        default=None,
+        type=int,
+        help="(DEPRECATED) How many weeks back to search",
+    )
+    parser.add_argument(
+        "-d",
+        "--days-back",
+        default=config.DEFAULT_DAYS_BACK,
+        type=int,
+        help="How many days back to search",
     )
     parser.add_argument(
         "--clear-cache", action="store_true", help="Clear local ml-check cache"
@@ -115,7 +128,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "-p",
         "--patch-output",
-        help="Dump patches to a file named $COVER_LETTER_SUBJECT/$PATCH_SUBJECT.patch in this directory"
+        default="out",
+        help="Dump patches to a file named $COVER_LETTER_SUBJECT/$PATCH_SUBJECT.patch in this directory. "
         + "Any patch existing in this location will be deleted.",
     )
     parser.add_argument(
@@ -142,6 +156,11 @@ if __name__ == "__main__":
 
     logger.debug(args)
 
+    days = args.days_back
+    if args.weeks_back:
+        print("WARNING: -w (--weeks-back) is deprecated use -d (--days) instead")
+        days = 7 * args.weeks_back
+
     reply_type = ReplyTypes.Default
     reply_count = None
     if args.all:
@@ -157,7 +176,7 @@ if __name__ == "__main__":
     ret = 1
     try:
         ret = main(
-            args.weeks_back,
+            days,
             args.patch_output,
             reply_type,
             reply_count,

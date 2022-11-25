@@ -14,3 +14,4 @@ CACHE_DIRECTORY = "~/.cache/ml-check"
 MONTHLY_CACHE = "{year:04d}-{month:02d}.mail_cache"
 STABLE_MBOX = "stable.mbox"
 ACTIVE_MBOX = "active.mbox"
+DEFAULT_DAYS_BACK = 14

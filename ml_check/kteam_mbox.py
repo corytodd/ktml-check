@@ -10,7 +10,7 @@ import mailbox
 import os
 import shutil
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Protocol
 
@@ -22,6 +22,13 @@ from ml_check.classifier import Category, SimpleClassifier
 from ml_check.logging import logger
 from ml_check.message import Message
 from ml_check.patch_set import PatchSet
+
+
+def datetime_min_tz(tz):
+    """Workaround datetime.min not having a timezone"""
+    result = datetime.min
+    result = result.replace(tzinfo=tz)
+    return result
 
 
 def periodic_mail_steps(start, end=datetime.utcnow()):
@@ -53,19 +60,25 @@ class ReplyTypes(Enum):
 
 
 class CustomPatchFilter:
-    def __init__(self, reply_type: ReplyTypes, reply_count: int):
-        logger.debug(
-            f"CustomPatchFilter: reply_type={reply_type}, reply_count={reply_count}"
-        )
+    def __init__(self, reply_type: ReplyTypes, reply_count: int, after=None):
+        self.after = datetime_min_tz(timezone.utc) if after is None else after
         self.reply_type = reply_type
         self.reply_count = reply_count
+        logger.debug(
+            "CustomPatchFilter: reply_type=%s, reply_count=%s, after=%s",
+            reply_type,
+            reply_count,
+            self.after,
+        )
 
     def apply(self, patch_set: PatchSet) -> bool:
-        if self.reply_type == ReplyTypes.Default:
-            return DefaultPatchFilter(patch_set)
         # ignore non-patches
         if patch_set.epoch_patch is None:
             return False
+        if patch_set.epoch_patch.timestamp < self.after:
+            return False
+        if self.reply_type == ReplyTypes.Default:
+            return DefaultPatchFilter(patch_set)
         if self.reply_type == ReplyTypes.All:
             return True
         if self.reply_type == ReplyTypes.Ack:
@@ -126,13 +139,14 @@ class KTeamMbox:
         if os.path.exists(config.STABLE_MBOX):
             os.remove(config.STABLE_MBOX)
 
-    def fetch_mail(self, weeks_back, clear_cache=False):
+    def fetch_mail(self, since=None, clear_cache=False):
         """Download mail archives from remote server
-        :param weeks_back: int weeks back from current week to search for abandoned patches
+        :param since: datetime to search from for abandoned patches
         :param clear_cache: bool True to remove existing mail prior to fetching
         """
         now = datetime.utcnow()
-        since = now - timedelta(weeks=weeks_back)
+        if since is None:
+            since = now - timedelta(weeks=config.DEFAULT_DAYS_BACK)
 
         if clear_cache:
             self.clear_cache()
