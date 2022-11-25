@@ -123,6 +123,8 @@ class KTeamMbox:
         pattern = os.path.join(self.cache_dir, "*.mail_cache")
         for file in glob.glob(pattern):
             os.remove(file)
+        if os.path.exists(config.STABLE_MBOX):
+            os.remove(config.STABLE_MBOX)
 
     def fetch_mail(self, weeks_back, clear_cache=False):
         """Download mail archives from remote server
