@@ -126,7 +126,8 @@ def safe_mbox(mbox_path):
 
 
 class KTeamMbox:
-    def __init__(self):
+    def __init__(self, classifier):
+        self.classifier = classifier
         self.cache_dir = os.path.expanduser(config.CACHE_DIRECTORY)
         if not os.path.exists(self.cache_dir):
             os.mkdir(self.cache_dir)
@@ -235,7 +236,7 @@ class KTeamMbox:
         message_map = {}
         with self.__build_active_mbox() as mbox:
             for mail in mbox:
-                message = Message.from_mail(mail)
+                message = Message.from_mail(mail, self.classifier)
                 if message is None:
                     continue
                 message_map[message.message_id] = message
@@ -258,10 +259,10 @@ class KTeamMbox:
             yield sorted(messages)
 
     @staticmethod
-    def read_messages(mbox_path):
+    def read_messages(mbox_path, classifier: MessageClassifier):
         """Helper for reading messages from an mbox file.
         Malformed messages may be returned as None
         """
         with safe_mbox(mbox_path) as mbox:
             for mail in mbox:
-                yield Message.from_mail(mail)
+                yield Message.from_mail(mail, classifier)

@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 
 from ml_check import config
+from ml_check.classifier import Category, MessageClassifier
 from ml_check.logging import logger
 
 # Strict means that we want angle brackets as seen in Acked-by and SOB lines
@@ -115,6 +116,7 @@ class Message:
         timestamp: datetime,
         body: str,
         sender: str,
+        category: Category,
     ):
         self.subject = subject
         self.message_id = message_id
@@ -123,6 +125,7 @@ class Message:
         self.timestamp = timestamp
         self.body = body
         self.sender = sender
+        self.category = category
 
     @property
     def thread_url(self):
@@ -131,7 +134,7 @@ class Message:
         return config.THREAD_URL.format(year=year, month=month_name)
 
     @staticmethod
-    def from_mail(mail):
+    def from_mail(mail, classifier: MessageClassifier):
         """Create a message from a mailbox.mboxMessage"""
         message_id = mail.get("Message-Id")
         in_reply_to = mail.get("In-Reply-To")
@@ -153,7 +156,9 @@ class Message:
                 timestamp=timestamp,
                 body=body,
                 sender=sender,
+                category=0,
             )
+            message.classify(classifier)
         else:
             # Show some details about the message including a truncated body
             logger.debug(
@@ -196,6 +201,11 @@ Message-Id: {message_id}
     def short_summary(self):
         """Machine readable summary in YYYY.DD URL subject format"""
         return f"[{self.timestamp.year}.{self.timestamp.month:02d}] {self.thread_url} {self.subject}"
+
+    def classify(self, classifier):
+        """Classify and store category using this classifier"""
+        self.category = classifier.get_category(self)
+        return self.category
 
     def __hash__(self):
         """Implement for graph relationship"""

@@ -32,6 +32,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 from ml_check import config
+from ml_check.classifier import Category, SimpleClassifier
 from ml_check.kteam_mbox import CustomPatchFilter, KTeamMbox, ReplyTypes
 from ml_check.logging import logger
 
@@ -78,7 +79,9 @@ def main(days_back, patch_output, reply_type, reply_count, clear_cache):
     :param clear_cache: bool delete local cache (will force download all new mail)
     """
     since = datetime.now(tz=timezone.utc) - timedelta(days=days_back)
-    kteam = KTeamMbox()
+
+    classifier = SimpleClassifier()
+    kteam = KTeamMbox(classifier)
     kteam.fetch_mail(since, clear_cache)
 
     if patch_output:
