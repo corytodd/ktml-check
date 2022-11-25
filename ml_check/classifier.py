@@ -15,6 +15,14 @@ from abc import abstractmethod
 from enum import Flag, auto
 from typing import List
 
+try:
+    from unidiff import PatchSet
+except ModuleNotFoundError:
+    print(
+        "unidiff required now sorry, the requirements changed."
+        "pip install -r requirements.txt"
+    )
+
 RE_PATCH = re.compile(
     r"\[?(patch|sru|ubuntu|pull)",
     re.IGNORECASE,
