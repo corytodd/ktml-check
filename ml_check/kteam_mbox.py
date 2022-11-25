@@ -18,7 +18,7 @@ import networkx as nx
 import requests
 
 from ml_check import config
-from ml_check.classifier import Category, SimpleClassifier
+from ml_check.classifier import Category, MessageClassifier
 from ml_check.logging import logger
 from ml_check.message import Message
 from ml_check.patch_set import PatchSet
@@ -217,12 +217,8 @@ class KTeamMbox:
         """Returns a list of patches and their email threads that are
         suspected of needing additional review.
         """
-        classifier = SimpleClassifier()
-
         for thread in self.all_threads():
-
-            patch_set = PatchSet(classifier, thread)
-
+            patch_set = PatchSet(thread)
             if patch_filter(patch_set):
                 yield patch_set
 
