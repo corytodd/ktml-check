@@ -63,8 +63,8 @@ class SimpleClassifier(MessageClassifier):
 
     def get_category(self, message) -> Category:
         subject = message.subject
+        is_cover_letter = self.__is_cover_letter(message)
         is_patch = self.__is_patch(message)
-        is_epoch = message.in_reply_to is None
         is_ack = subject is not None and subject.lower().startswith("ack")
         is_nak = subject is not None and (
             # Yup, NAC/NAK/NAC K seems to come in many flavors
@@ -80,49 +80,76 @@ class SimpleClassifier(MessageClassifier):
         if is_ack:
             return Category.PatchAck
         if is_patch:
-            if is_epoch:
+            if is_cover_letter:
                 return Category.PatchCoverLetter
             return Category.PatchN
 
         return Category.NotPatch
 
-    def __is_patch(self, message):
-        # Soft check on the subject
-        if message.subject is None or not re.search(RE_PATCH, message.subject):
-            return False
+    def __is_cover_letter(self, message):
+        #
+        # Cover letters are hard to detect. SRU patches at least have a
+        # template with static bits we can look for. Of course these are
+        # not perfect either. Require any two of these phrases.
+        sru_template = (
+            "[Impact]",
+            "[Fix]",
+            "[Test]",
+            "[Test Plan]",
+            "[Where problems could occur]",
+        )
+        matches = len([s for s in sru_template if s in message.body])
+        is_cover_letter = matches >= 2
 
-        # Soft check the message id for git-send-email
-        if "git-send-email" in message.message_id:
-            return True
+        return is_cover_letter
+
+    def __is_patch(self, message):
+        is_patch = False
+        #
+        # Skip subjects that do not conform
+        if not self.__subject_looks_like_patch(message):
+            is_patch = False
+
+        #
+        # It would be weird to send a non-patch with git-send-email
+        if not is_patch:
+            is_patch = self.__is_git_send_email(message)
 
         #
         # Replies re-use the subject and don't always use the RE: prefix
         # Inspect the body for git-diffs. This will handle single patches.
-        is_patch = False
-        try:
-            patch = PatchSet(message.body)
-            is_patch = any(patch)
-        except:
-            pass
+        if not is_patch:
+            is_patch = self.__contains_patch(message)
 
         #
-        # Cover letters are harder to detect. SRU patches at least have a
-        # template with static bits we can look for. Of course these are
-        # not perfect either. Require any two of these phrases.
+        # This might be a cover letter which has all the attributes
+        # but would be lacking an actual patch.
         if not is_patch:
-            sru_template = (
-                "[Impact]",
-                "[Fix]",
-                "[Test]",
-                "[Test Plan]",
-                "[Where problems could occur]",
-            )
-            matches = len([s for s in sru_template if s in message.body])
-            is_patch = matches >= 2
+            is_patch = self.__is_cover_letter(message)
 
         # At this point, the subject is wrong, no patch is present, and they
         # did not use git-send-email. We can't help them.
         return is_patch
+
+    def __is_git_send_email(self, message):
+        # Soft check the message id for git-send-email
+        return "git-send-email" in message.message_id
+
+    def __subject_looks_like_patch(self, message):
+        if message.subject is None:
+            return False
+        if not re.search(RE_PATCH, message.subject):
+            return False
+        return True
+
+    def __contains_patch(self, message):
+        #
+        # Only messages with inline patches will be parsed
+        try:
+            patch = PatchSet(message.body)
+            return any(patch)
+        except:
+            return False
 
     def get_affected_kernels(self, message) -> List[str]:
         return []
