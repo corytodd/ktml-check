@@ -9,8 +9,10 @@ import gzip
 import mailbox
 import os
 import shutil
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from enum import Enum
+from fcntl import LOCK_EX, LOCK_NB, LOCK_UN, lockf
 from typing import Protocol
 
 import networkx as nx
@@ -99,6 +101,17 @@ def DefaultPatchFilter(patch_set: PatchSet) -> bool:
     return accept
 
 
+@contextmanager
+def safe_mbox(mbox_path):
+    """Allow using with semantics for mbox files"""
+    with open(mbox_path + ".lock", "w") as lockfd:
+        lockf(lockfd, LOCK_EX, 0)
+        mbox = mailbox.mbox(mbox_path)
+        yield mbox
+        lockf(lockfd, LOCK_UN, 1, 0)
+        mbox.close()
+
+
 class KTeamMbox:
     def __init__(self):
         self.cache_dir = os.path.expanduser(config.CACHE_DIRECTORY)
@@ -123,39 +136,40 @@ class KTeamMbox:
             self.clear_cache()
 
         stable_mbox_path = os.path.join(self.cache_dir, config.STABLE_MBOX)
-        stable_mbox = mailbox.mbox(stable_mbox_path)
+        with safe_mbox(stable_mbox_path) as stable_mbox:
+            for year, month in periodic_mail_steps(since):
+                month_name = calendar.month_name[month]
+                cache_file = os.path.join(
+                    self.cache_dir, config.MONTHLY_CACHE.format(year=year, month=month)
+                )
 
-        for year, month in periodic_mail_steps(since):
-            month_name = calendar.month_name[month]
-            cache_file = os.path.join(
-                self.cache_dir, config.MONTHLY_CACHE.format(year=year, month=month)
-            )
+                # Skip bygone YYYY.MM mail, those should not have any changes
+                if os.path.exists(cache_file):
+                    if year < now.year or month < now.month:
+                        logger.debug("skipping %s.%s", year, month_name)
+                        continue
 
-            # Skip bygone YYYY.MM mail, those should not have any changes
-            if os.path.exists(cache_file):
-                if year < now.year or month < now.month:
-                    logger.debug("skipping %s.%s", year, month_name)
-                    continue
+                logger.info("downloading %s.%s...", year, month_name)
+                remote_file = config.MONTHLY_URL.format(year=year, month=month_name)
 
-            logger.info("downloading %s.%s...", year, month_name)
-            remote_file = config.MONTHLY_URL.format(year=year, month=month_name)
+                r = requests.get(remote_file)
+                with open(cache_file, "wb") as f:
+                    inflated = gzip.decompress(r.content)
+                    f.write(inflated)
 
-            r = requests.get(remote_file)
-            with open(cache_file, "wb") as f:
-                inflated = gzip.decompress(r.content)
-                f.write(inflated)
+                # Do not add current year.month mail. The current month is considered
+                # active
+                if year != now.year or month != now.month:
+                    with safe_mbox(cache_file) as next_mbox:
+                        for mail in next_mbox:
+                            stable_mbox.add(mail)
 
-            # Do not add current year.month mail. The current month is considered
-            # active
-            if year != now.year or month != now.month:
-                next_mbox = mailbox.mbox(cache_file)
-                for mail in next_mbox:
-                    stable_mbox.add(mail)
+            # Make sure all the new messages are written to disk
+            stable_mbox.flush()
 
-        # Make sure all the new messages are written to disk
-        stable_mbox.flush()
-        logger.debug("stable mailbox has %s messages", len(stable_mbox.keys()))
+            logger.debug("stable mailbox has %s messages", len(stable_mbox.keys()))
 
+    @contextmanager
     def __build_active_mbox(self):
         """Builds a new mbox based on the stable mbox, adding only mail from
         the current (active) year.month."""
@@ -174,11 +188,13 @@ class KTeamMbox:
 
         # Active mailbox will be the stable mail + the current month's mail
         active_mbox = mailbox.mbox(active_mbox_path)
-        for mail in mailbox.mbox(cache_file):
-            active_mbox.add(mail)
+        with safe_mbox(cache_file) as cached_mbox:
+            for mail in cached_mbox:
+                active_mbox.add(mail)
 
         active_mbox.flush()
-        return active_mbox
+        yield active_mbox
+        active_mbox.close()
 
     def filter_patches(self, patch_filter: PatchFilter = DefaultPatchFilter):
         """Returns a list of patches and their email threads that are
@@ -201,11 +217,12 @@ class KTeamMbox:
         # we need to make our own associative mapping of message_id<>messages.
         # Do this first so we can build our thread map during a second iteration.
         message_map = {}
-        for mail in self.__build_active_mbox():
-            message = Message.from_mail(mail)
-            if message is None:
-                continue
-            message_map[message.message_id] = message
+        with self.__build_active_mbox() as mbox:
+            for mail in mbox:
+                message = Message.from_mail(mail)
+                if message is None:
+                    continue
+                message_map[message.message_id] = message
 
         # An email thread can be treated as an undirected graph.
         # We could use a DiGraph but that just makes segmentation harder so
@@ -223,3 +240,12 @@ class KTeamMbox:
             # Convert to list for deterministic ordering
             messages = [m for m in thread]
             yield sorted(messages)
+
+    @staticmethod
+    def read_messages(mbox_path):
+        """Helper for reading messages from an mbox file.
+        Malformed messages may be returned as None
+        """
+        with safe_mbox(mbox_path) as mbox:
+            for mail in mbox:
+                yield Message.from_mail(mail)
