@@ -1,0 +1,659 @@
+From aleksandr.mikhalitsyn at canonical.com  Thu Nov 17 14:23:47 2022
+From: aleksandr.mikhalitsyn at canonical.com (Alexander Mikhalitsyn)
+Date: Thu, 17 Nov 2022 15:23:47 +0100
+Subject: [SRU][J/K][PATCH] UBUNTU: [SAUCE] shiftfs: fix permanent -EOVERFLOW
+ inside the CT
+Message-ID: <20221117142347.412558-1-aleksandr.mikhalitsyn@canonical.com>
+
+BugLink: https://bugs.launchpad.net/bugs/1990849
+
+We haven't supported idmapped layers with shiftfs and moreover, that makes
+no sense. Once lower fs support idmapped mounts when shiftfs is not needed.
+
+Starting from linux-image-5.15.0-48-generic users started seeing EOVERFLOW
+errors from the userspace side on a trivial fs operations inside the containers.
+
+This is caused by patches ("fs: tweak fsuidgid_has_mapping()"),
+("fs: support mapped mounts of mapped filesystems"). These patches extends
+and enables idmapped mounts support in Ubuntu kernel, but the problem is
+that shiftfs was not properly ported.
+
+See also:
+("namei: prepare for idmapped mounts")
+https://lore.kernel.org/all/20210121131959.646623-15-christian.brauner at ubuntu.com/
+("overlayfs: do not mount on top of idmapped mounts")
+https://lore.kernel.org/all/20210121131959.646623-29-christian.brauner at ubuntu.com/
+as a reference.
+
+Fixes: d347e71d2c0 ("UBUNTU: [SAUCE] shiftfs: support kernel 5.15")
+Reported-by: Thomas Parrott <thomas.parrott at canonical.com>
+Signed-off-by: Alexander Mikhalitsyn <aleksandr.mikhalitsyn at canonical.com>
+---
+ fs/shiftfs.c | 42 ++++++++++++++++++++++++++----------------
+ 1 file changed, 26 insertions(+), 16 deletions(-)
+
+diff --git a/fs/shiftfs.c b/fs/shiftfs.c
+index 76c54bc12018..9ea6e7ef06f9 100644
+--- a/fs/shiftfs.c
++++ b/fs/shiftfs.c
+@@ -379,8 +379,8 @@ static int shiftfs_xattr_set(const struct xattr_handler *handler,
+ 			     int flags)
+ {
+ 	if (!value)
+-		return shiftfs_removexattr(ns, dentry, name);
+-	return shiftfs_setxattr(ns, dentry, inode, name, value, size, flags);
++		return shiftfs_removexattr(&init_user_ns, dentry, name);
++	return shiftfs_setxattr(&init_user_ns, dentry, inode, name, value, size, flags);
+ }
+ 
+ static int shiftfs_inode_test(struct inode *inode, void *data)
+@@ -545,7 +545,7 @@ static int shiftfs_create(struct user_namespace *ns,
+ {
+ 	mode |= S_IFREG;
+ 
+-	return shiftfs_create_object(ns, dir, dentry, mode, NULL, NULL, excl);
++	return shiftfs_create_object(&init_user_ns, dir, dentry, mode, NULL, NULL, excl);
+ }
+ 
+ static int shiftfs_mkdir(struct user_namespace *ns, struct inode *dir, struct dentry *dentry,
+@@ -553,7 +553,7 @@ static int shiftfs_mkdir(struct user_namespace *ns, struct inode *dir, struct de
+ {
+ 	mode |= S_IFDIR;
+ 
+-	return shiftfs_create_object(ns, dir, dentry, mode, NULL, NULL, false);
++	return shiftfs_create_object(&init_user_ns, dir, dentry, mode, NULL, NULL, false);
+ }
+ 
+ static int shiftfs_link(struct dentry *hardlink, struct inode *dir,
+@@ -569,13 +569,13 @@ static int shiftfs_mknod(struct user_namespace *ns,
+ 	if (!S_ISFIFO(mode) && !S_ISSOCK(mode))
+ 		return -EPERM;
+ 
+-	return shiftfs_create_object(ns, dir, dentry, mode, NULL, NULL, false);
++	return shiftfs_create_object(&init_user_ns, dir, dentry, mode, NULL, NULL, false);
+ }
+ 
+ static int shiftfs_symlink(struct user_namespace *ns, struct inode *dir, struct dentry *dentry,
+ 			   const char *symlink)
+ {
+-	return shiftfs_create_object(ns, dir, dentry, S_IFLNK, symlink, NULL, false);
++	return shiftfs_create_object(&init_user_ns, dir, dentry, S_IFLNK, symlink, NULL, false);
+ }
+ 
+ static int shiftfs_rm(struct inode *dir, struct dentry *dentry, bool rmdir)
+@@ -633,10 +633,10 @@ static int shiftfs_rename(struct user_namespace *ns,
+ 	struct inode *loweri_dir_old = lowerd_dir_old->d_inode,
+ 		     *loweri_dir_new = lowerd_dir_new->d_inode;
+ 	struct renamedata rd = {
+-		.old_mnt_userns	= ns,
++		.old_mnt_userns	= &init_user_ns,
+ 		.old_dir	= loweri_dir_old,
+ 		.old_dentry	= lowerd_old,
+-		.new_mnt_userns	= ns,
++		.new_mnt_userns	= &init_user_ns,
+ 		.new_dir	= loweri_dir_new,
+ 		.new_dentry	= lowerd_new,
+ 	};
+@@ -716,12 +716,12 @@ static int shiftfs_permission(struct user_namespace *ns, struct inode *inode, in
+ 		return -ECHILD;
+ 	}
+ 
+-	err = generic_permission(ns, inode, mask);
++	err = generic_permission(&init_user_ns, inode, mask);
+ 	if (err)
+ 		return err;
+ 
+ 	oldcred = shiftfs_override_creds(inode->i_sb);
+-	err = inode_permission(ns, loweri, mask);
++	err = inode_permission(&init_user_ns, loweri, mask);
+ 	revert_creds(oldcred);
+ 
+ 	return err;
+@@ -760,7 +760,7 @@ static int shiftfs_tmpfile(struct user_namespace *ns,
+ 		return -EOPNOTSUPP;
+ 
+ 	oldcred = shiftfs_override_creds(dir->i_sb);
+-	err = loweri->i_op->tmpfile(ns, loweri, lowerd, mode);
++	err = loweri->i_op->tmpfile(&init_user_ns, loweri, lowerd, mode);
+ 	revert_creds(oldcred);
+ 
+ 	return err;
+@@ -776,7 +776,7 @@ static int shiftfs_setattr(struct user_namespace *ns, struct dentry *dentry, str
+ 	struct shiftfs_super_info *sbinfo = sb->s_fs_info;
+ 	int err;
+ 
+-	err = setattr_prepare(ns, dentry, attr);
++	err = setattr_prepare(&init_user_ns, dentry, attr);
+ 	if (err)
+ 		return err;
+ 
+@@ -793,7 +793,7 @@ static int shiftfs_setattr(struct user_namespace *ns, struct dentry *dentry, str
+ 
+ 	inode_lock(loweri);
+ 	oldcred = shiftfs_override_creds(dentry->d_sb);
+-	err = notify_change(ns, lowerd, &newattr, NULL);
++	err = notify_change(&init_user_ns, lowerd, &newattr, NULL);
+ 	revert_creds(oldcred);
+ 	inode_unlock(loweri);
+ 
+@@ -973,17 +973,17 @@ shiftfs_posix_acl_xattr_set(const struct xattr_handler *handler,
+ 		return -EOPNOTSUPP;
+ 	if (handler->flags == ACL_TYPE_DEFAULT && !S_ISDIR(inode->i_mode))
+ 		return value ? -EACCES : 0;
+-	if (!inode_owner_or_capable(ns, inode))
++	if (!inode_owner_or_capable(&init_user_ns, inode))
+ 		return -EPERM;
+ 
+ 	if (value) {
+ 		shift_acl_xattr_ids(inode->i_sb->s_user_ns,
+ 				    loweri->i_sb->s_user_ns,
+ 				    (void *)value, size);
+-		err = shiftfs_setxattr(ns, dentry, inode, handler->name, value,
++		err = shiftfs_setxattr(&init_user_ns, dentry, inode, handler->name, value,
+ 				       size, flags);
+ 	} else {
+-		err = shiftfs_removexattr(ns, dentry, handler->name);
++		err = shiftfs_removexattr(&init_user_ns, dentry, handler->name);
+ 	}
+ 
+ 	if (!err)
+@@ -2017,6 +2017,16 @@ static int shiftfs_fill_super(struct super_block *sb, void *raw_data,
+ 		goto out_put_path;
+ 	}
+ 
++	/*
++	 * It makes no sense to handle idmapped layers from shiftfs.
++	 * And we didn't support it properly anyway.
++	 */
++	if (is_idmapped_mnt(path.mnt)) {
++		err = -EINVAL;
++		pr_err("idmapped layers are currently not supported\n");
++		goto out_put_path;
++	}
++
+ 	sb->s_flags |= SB_POSIXACL;
+ 
+ 	if (sbinfo->mark) {
+-- 
+2.34.1
+
+
+
+From dimitri.ledkov at canonical.com  Thu Nov 17 15:31:46 2022
+From: dimitri.ledkov at canonical.com (Dimitri John Ledkov)
+Date: Thu, 17 Nov 2022 15:31:46 +0000
+Subject: [SRU][J/K][PATCH] UBUNTU: [SAUCE] shiftfs: fix permanent
+ -EOVERFLOW inside the CT
+In-Reply-To: <20221117142347.412558-1-aleksandr.mikhalitsyn@canonical.com>
+References: <20221117142347.412558-1-aleksandr.mikhalitsyn@canonical.com>
+Message-ID: <CADWks+bHCB0NG8bMk2B+wD8Jgxwx-Px2-w-DeLkPgrWpLnYYdw@mail.gmail.com>
+
+I started to review this, and trying to understand difference between
+this patch and what we have done in kinetic
+https://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/kinetic/commit/?id=4c934edc66ec7467ca2da4f8670a6a712289a3a3
+
+On Thu, 17 Nov 2022 at 14:24, Alexander Mikhalitsyn
+<aleksandr.mikhalitsyn at canonical.com> wrote:
+>
+> BugLink: https://bugs.launchpad.net/bugs/1990849
+>
+> We haven't supported idmapped layers with shiftfs and moreover, that makes
+> no sense. Once lower fs support idmapped mounts when shiftfs is not needed.
+>
+> Starting from linux-image-5.15.0-48-generic users started seeing EOVERFLOW
+> errors from the userspace side on a trivial fs operations inside the containers.
+>
+> This is caused by patches ("fs: tweak fsuidgid_has_mapping()"),
+> ("fs: support mapped mounts of mapped filesystems"). These patches extends
+> and enables idmapped mounts support in Ubuntu kernel, but the problem is
+> that shiftfs was not properly ported.
+>
+> See also:
+> ("namei: prepare for idmapped mounts")
+> https://lore.kernel.org/all/20210121131959.646623-15-christian.brauner at ubuntu.com/
+> ("overlayfs: do not mount on top of idmapped mounts")
+> https://lore.kernel.org/all/20210121131959.646623-29-christian.brauner at ubuntu.com/
+> as a reference.
+>
+> Fixes: d347e71d2c0 ("UBUNTU: [SAUCE] shiftfs: support kernel 5.15")
+> Reported-by: Thomas Parrott <thomas.parrott at canonical.com>
+> Signed-off-by: Alexander Mikhalitsyn <aleksandr.mikhalitsyn at canonical.com>
+> ---
+>  fs/shiftfs.c | 42 ++++++++++++++++++++++++++----------------
+>  1 file changed, 26 insertions(+), 16 deletions(-)
+>
+> diff --git a/fs/shiftfs.c b/fs/shiftfs.c
+> index 76c54bc12018..9ea6e7ef06f9 100644
+> --- a/fs/shiftfs.c
+> +++ b/fs/shiftfs.c
+> @@ -379,8 +379,8 @@ static int shiftfs_xattr_set(const struct xattr_handler *handler,
+>                              int flags)
+>  {
+>         if (!value)
+> -               return shiftfs_removexattr(ns, dentry, name);
+> -       return shiftfs_setxattr(ns, dentry, inode, name, value, size, flags);
+> +               return shiftfs_removexattr(&init_user_ns, dentry, name);
+> +       return shiftfs_setxattr(&init_user_ns, dentry, inode, name, value, size, flags);
+>  }
+>
+>  static int shiftfs_inode_test(struct inode *inode, void *data)
+> @@ -545,7 +545,7 @@ static int shiftfs_create(struct user_namespace *ns,
+>  {
+>         mode |= S_IFREG;
+>
+> -       return shiftfs_create_object(ns, dir, dentry, mode, NULL, NULL, excl);
+> +       return shiftfs_create_object(&init_user_ns, dir, dentry, mode, NULL, NULL, excl);
+>  }
+>
+>  static int shiftfs_mkdir(struct user_namespace *ns, struct inode *dir, struct dentry *dentry,
+> @@ -553,7 +553,7 @@ static int shiftfs_mkdir(struct user_namespace *ns, struct inode *dir, struct de
+>  {
+>         mode |= S_IFDIR;
+>
+> -       return shiftfs_create_object(ns, dir, dentry, mode, NULL, NULL, false);
+> +       return shiftfs_create_object(&init_user_ns, dir, dentry, mode, NULL, NULL, false);
+>  }
+>
+>  static int shiftfs_link(struct dentry *hardlink, struct inode *dir,
+> @@ -569,13 +569,13 @@ static int shiftfs_mknod(struct user_namespace *ns,
+>         if (!S_ISFIFO(mode) && !S_ISSOCK(mode))
+>                 return -EPERM;
+>
+> -       return shiftfs_create_object(ns, dir, dentry, mode, NULL, NULL, false);
+> +       return shiftfs_create_object(&init_user_ns, dir, dentry, mode, NULL, NULL, false);
+>  }
+>
+>  static int shiftfs_symlink(struct user_namespace *ns, struct inode *dir, struct dentry *dentry,
+>                            const char *symlink)
+>  {
+> -       return shiftfs_create_object(ns, dir, dentry, S_IFLNK, symlink, NULL, false);
+> +       return shiftfs_create_object(&init_user_ns, dir, dentry, S_IFLNK, symlink, NULL, false);
+>  }
+>
+>  static int shiftfs_rm(struct inode *dir, struct dentry *dentry, bool rmdir)
+> @@ -633,10 +633,10 @@ static int shiftfs_rename(struct user_namespace *ns,
+>         struct inode *loweri_dir_old = lowerd_dir_old->d_inode,
+>                      *loweri_dir_new = lowerd_dir_new->d_inode;
+>         struct renamedata rd = {
+> -               .old_mnt_userns = ns,
+> +               .old_mnt_userns = &init_user_ns,
+>                 .old_dir        = loweri_dir_old,
+>                 .old_dentry     = lowerd_old,
+> -               .new_mnt_userns = ns,
+> +               .new_mnt_userns = &init_user_ns,
+>                 .new_dir        = loweri_dir_new,
+>                 .new_dentry     = lowerd_new,
+>         };
+> @@ -716,12 +716,12 @@ static int shiftfs_permission(struct user_namespace *ns, struct inode *inode, in
+>                 return -ECHILD;
+>         }
+>
+> -       err = generic_permission(ns, inode, mask);
+> +       err = generic_permission(&init_user_ns, inode, mask);
+>         if (err)
+>                 return err;
+>
+>         oldcred = shiftfs_override_creds(inode->i_sb);
+> -       err = inode_permission(ns, loweri, mask);
+> +       err = inode_permission(&init_user_ns, loweri, mask);
+>         revert_creds(oldcred);
+>
+>         return err;
+> @@ -760,7 +760,7 @@ static int shiftfs_tmpfile(struct user_namespace *ns,
+>                 return -EOPNOTSUPP;
+>
+>         oldcred = shiftfs_override_creds(dir->i_sb);
+> -       err = loweri->i_op->tmpfile(ns, loweri, lowerd, mode);
+> +       err = loweri->i_op->tmpfile(&init_user_ns, loweri, lowerd, mode);
+>         revert_creds(oldcred);
+>
+>         return err;
+> @@ -776,7 +776,7 @@ static int shiftfs_setattr(struct user_namespace *ns, struct dentry *dentry, str
+>         struct shiftfs_super_info *sbinfo = sb->s_fs_info;
+>         int err;
+>
+> -       err = setattr_prepare(ns, dentry, attr);
+> +       err = setattr_prepare(&init_user_ns, dentry, attr);
+>         if (err)
+>                 return err;
+>
+> @@ -793,7 +793,7 @@ static int shiftfs_setattr(struct user_namespace *ns, struct dentry *dentry, str
+>
+>         inode_lock(loweri);
+>         oldcred = shiftfs_override_creds(dentry->d_sb);
+> -       err = notify_change(ns, lowerd, &newattr, NULL);
+> +       err = notify_change(&init_user_ns, lowerd, &newattr, NULL);
+>         revert_creds(oldcred);
+>         inode_unlock(loweri);
+>
+> @@ -973,17 +973,17 @@ shiftfs_posix_acl_xattr_set(const struct xattr_handler *handler,
+>                 return -EOPNOTSUPP;
+>         if (handler->flags == ACL_TYPE_DEFAULT && !S_ISDIR(inode->i_mode))
+>                 return value ? -EACCES : 0;
+> -       if (!inode_owner_or_capable(ns, inode))
+> +       if (!inode_owner_or_capable(&init_user_ns, inode))
+>                 return -EPERM;
+>
+>         if (value) {
+>                 shift_acl_xattr_ids(inode->i_sb->s_user_ns,
+>                                     loweri->i_sb->s_user_ns,
+>                                     (void *)value, size);
+> -               err = shiftfs_setxattr(ns, dentry, inode, handler->name, value,
+> +               err = shiftfs_setxattr(&init_user_ns, dentry, inode, handler->name, value,
+>                                        size, flags);
+>         } else {
+> -               err = shiftfs_removexattr(ns, dentry, handler->name);
+> +               err = shiftfs_removexattr(&init_user_ns, dentry, handler->name);
+>         }
+>
+>         if (!err)
+> @@ -2017,6 +2017,16 @@ static int shiftfs_fill_super(struct super_block *sb, void *raw_data,
+>                 goto out_put_path;
+>         }
+>
+> +       /*
+> +        * It makes no sense to handle idmapped layers from shiftfs.
+> +        * And we didn't support it properly anyway.
+> +        */
+> +       if (is_idmapped_mnt(path.mnt)) {
+> +               err = -EINVAL;
+> +               pr_err("idmapped layers are currently not supported\n");
+> +               goto out_put_path;
+> +       }
+> +
+>         sb->s_flags |= SB_POSIXACL;
+>
+>         if (sbinfo->mark) {
+> --
+> 2.34.1
+>
+>
+> --
+> kernel-team mailing list
+> kernel-team at lists.ubuntu.com
+> https://lists.ubuntu.com/mailman/listinfo/kernel-team
+
+
+
+-- 
+okurrr,
+
+Dimitri
+
+From aleksandr.mikhalitsyn at canonical.com  Thu Nov 17 15:50:32 2022
+From: aleksandr.mikhalitsyn at canonical.com (Aleksandr Mikhalitsyn)
+Date: Thu, 17 Nov 2022 16:50:32 +0100
+Subject: [SRU][J/K][PATCH] UBUNTU: [SAUCE] shiftfs: fix permanent
+ -EOVERFLOW inside the CT
+In-Reply-To: <CADWks+bHCB0NG8bMk2B+wD8Jgxwx-Px2-w-DeLkPgrWpLnYYdw@mail.gmail.com>
+References: <20221117142347.412558-1-aleksandr.mikhalitsyn@canonical.com>
+ <CADWks+bHCB0NG8bMk2B+wD8Jgxwx-Px2-w-DeLkPgrWpLnYYdw@mail.gmail.com>
+Message-ID: <CAEivzxfnZunD09QnrK_-m4zcgSzCgDo6vdn59GjnYL9+6BTvCQ@mail.gmail.com>
+
+On Thu, Nov 17, 2022 at 4:32 PM Dimitri John Ledkov
+<dimitri.ledkov at canonical.com> wrote:
+>
+> I started to review this, and trying to understand difference between
+> this patch and what we have done in kinetic
+> https://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/kinetic/commit/?id=4c934edc66ec7467ca2da4f8670a6a712289a3a3
+
+Thanks! I've not seen this patch before (seems it's not in
+kinetic/master), it's interesting why it wasn't ported to Jammy tree.
+
+Speaking about the difference, I think we have to add a check about
+    /*
+     * It makes no sense to handle idmapped layers from shiftfs.
+     * And we didn't support it properly anyway.
+     */
+    if (is_idmapped_mnt(path.mnt)) {
+        err = -EINVAL;
+        pr_err("idmapped layers are currently not supported\n");
+        goto out_put_path;
+    }
+
+and also as I can see we need to change
+    if (!inode_owner_or_capable(ns, inode))
+        return -EPERM;
+to
+    if (!inode_owner_or_capable(&init_user_ns, inode))
+        return -EPERM;
+
+as in my version.
+
+Regards,
+Alex
+
+>
+> On Thu, 17 Nov 2022 at 14:24, Alexander Mikhalitsyn
+> <aleksandr.mikhalitsyn at canonical.com> wrote:
+> >
+> > BugLink: https://bugs.launchpad.net/bugs/1990849
+> >
+> > We haven't supported idmapped layers with shiftfs and moreover, that makes
+> > no sense. Once lower fs support idmapped mounts when shiftfs is not needed.
+> >
+> > Starting from linux-image-5.15.0-48-generic users started seeing EOVERFLOW
+> > errors from the userspace side on a trivial fs operations inside the containers.
+> >
+> > This is caused by patches ("fs: tweak fsuidgid_has_mapping()"),
+> > ("fs: support mapped mounts of mapped filesystems"). These patches extends
+> > and enables idmapped mounts support in Ubuntu kernel, but the problem is
+> > that shiftfs was not properly ported.
+> >
+> > See also:
+> > ("namei: prepare for idmapped mounts")
+> > https://lore.kernel.org/all/20210121131959.646623-15-christian.brauner at ubuntu.com/
+> > ("overlayfs: do not mount on top of idmapped mounts")
+> > https://lore.kernel.org/all/20210121131959.646623-29-christian.brauner at ubuntu.com/
+> > as a reference.
+> >
+> > Fixes: d347e71d2c0 ("UBUNTU: [SAUCE] shiftfs: support kernel 5.15")
+> > Reported-by: Thomas Parrott <thomas.parrott at canonical.com>
+> > Signed-off-by: Alexander Mikhalitsyn <aleksandr.mikhalitsyn at canonical.com>
+> > ---
+> >  fs/shiftfs.c | 42 ++++++++++++++++++++++++++----------------
+> >  1 file changed, 26 insertions(+), 16 deletions(-)
+> >
+> > diff --git a/fs/shiftfs.c b/fs/shiftfs.c
+> > index 76c54bc12018..9ea6e7ef06f9 100644
+> > --- a/fs/shiftfs.c
+> > +++ b/fs/shiftfs.c
+> > @@ -379,8 +379,8 @@ static int shiftfs_xattr_set(const struct xattr_handler *handler,
+> >                              int flags)
+> >  {
+> >         if (!value)
+> > -               return shiftfs_removexattr(ns, dentry, name);
+> > -       return shiftfs_setxattr(ns, dentry, inode, name, value, size, flags);
+> > +               return shiftfs_removexattr(&init_user_ns, dentry, name);
+> > +       return shiftfs_setxattr(&init_user_ns, dentry, inode, name, value, size, flags);
+> >  }
+> >
+> >  static int shiftfs_inode_test(struct inode *inode, void *data)
+> > @@ -545,7 +545,7 @@ static int shiftfs_create(struct user_namespace *ns,
+> >  {
+> >         mode |= S_IFREG;
+> >
+> > -       return shiftfs_create_object(ns, dir, dentry, mode, NULL, NULL, excl);
+> > +       return shiftfs_create_object(&init_user_ns, dir, dentry, mode, NULL, NULL, excl);
+> >  }
+> >
+> >  static int shiftfs_mkdir(struct user_namespace *ns, struct inode *dir, struct dentry *dentry,
+> > @@ -553,7 +553,7 @@ static int shiftfs_mkdir(struct user_namespace *ns, struct inode *dir, struct de
+> >  {
+> >         mode |= S_IFDIR;
+> >
+> > -       return shiftfs_create_object(ns, dir, dentry, mode, NULL, NULL, false);
+> > +       return shiftfs_create_object(&init_user_ns, dir, dentry, mode, NULL, NULL, false);
+> >  }
+> >
+> >  static int shiftfs_link(struct dentry *hardlink, struct inode *dir,
+> > @@ -569,13 +569,13 @@ static int shiftfs_mknod(struct user_namespace *ns,
+> >         if (!S_ISFIFO(mode) && !S_ISSOCK(mode))
+> >                 return -EPERM;
+> >
+> > -       return shiftfs_create_object(ns, dir, dentry, mode, NULL, NULL, false);
+> > +       return shiftfs_create_object(&init_user_ns, dir, dentry, mode, NULL, NULL, false);
+> >  }
+> >
+> >  static int shiftfs_symlink(struct user_namespace *ns, struct inode *dir, struct dentry *dentry,
+> >                            const char *symlink)
+> >  {
+> > -       return shiftfs_create_object(ns, dir, dentry, S_IFLNK, symlink, NULL, false);
+> > +       return shiftfs_create_object(&init_user_ns, dir, dentry, S_IFLNK, symlink, NULL, false);
+> >  }
+> >
+> >  static int shiftfs_rm(struct inode *dir, struct dentry *dentry, bool rmdir)
+> > @@ -633,10 +633,10 @@ static int shiftfs_rename(struct user_namespace *ns,
+> >         struct inode *loweri_dir_old = lowerd_dir_old->d_inode,
+> >                      *loweri_dir_new = lowerd_dir_new->d_inode;
+> >         struct renamedata rd = {
+> > -               .old_mnt_userns = ns,
+> > +               .old_mnt_userns = &init_user_ns,
+> >                 .old_dir        = loweri_dir_old,
+> >                 .old_dentry     = lowerd_old,
+> > -               .new_mnt_userns = ns,
+> > +               .new_mnt_userns = &init_user_ns,
+> >                 .new_dir        = loweri_dir_new,
+> >                 .new_dentry     = lowerd_new,
+> >         };
+> > @@ -716,12 +716,12 @@ static int shiftfs_permission(struct user_namespace *ns, struct inode *inode, in
+> >                 return -ECHILD;
+> >         }
+> >
+> > -       err = generic_permission(ns, inode, mask);
+> > +       err = generic_permission(&init_user_ns, inode, mask);
+> >         if (err)
+> >                 return err;
+> >
+> >         oldcred = shiftfs_override_creds(inode->i_sb);
+> > -       err = inode_permission(ns, loweri, mask);
+> > +       err = inode_permission(&init_user_ns, loweri, mask);
+> >         revert_creds(oldcred);
+> >
+> >         return err;
+> > @@ -760,7 +760,7 @@ static int shiftfs_tmpfile(struct user_namespace *ns,
+> >                 return -EOPNOTSUPP;
+> >
+> >         oldcred = shiftfs_override_creds(dir->i_sb);
+> > -       err = loweri->i_op->tmpfile(ns, loweri, lowerd, mode);
+> > +       err = loweri->i_op->tmpfile(&init_user_ns, loweri, lowerd, mode);
+> >         revert_creds(oldcred);
+> >
+> >         return err;
+> > @@ -776,7 +776,7 @@ static int shiftfs_setattr(struct user_namespace *ns, struct dentry *dentry, str
+> >         struct shiftfs_super_info *sbinfo = sb->s_fs_info;
+> >         int err;
+> >
+> > -       err = setattr_prepare(ns, dentry, attr);
+> > +       err = setattr_prepare(&init_user_ns, dentry, attr);
+> >         if (err)
+> >                 return err;
+> >
+> > @@ -793,7 +793,7 @@ static int shiftfs_setattr(struct user_namespace *ns, struct dentry *dentry, str
+> >
+> >         inode_lock(loweri);
+> >         oldcred = shiftfs_override_creds(dentry->d_sb);
+> > -       err = notify_change(ns, lowerd, &newattr, NULL);
+> > +       err = notify_change(&init_user_ns, lowerd, &newattr, NULL);
+> >         revert_creds(oldcred);
+> >         inode_unlock(loweri);
+> >
+> > @@ -973,17 +973,17 @@ shiftfs_posix_acl_xattr_set(const struct xattr_handler *handler,
+> >                 return -EOPNOTSUPP;
+> >         if (handler->flags == ACL_TYPE_DEFAULT && !S_ISDIR(inode->i_mode))
+> >                 return value ? -EACCES : 0;
+> > -       if (!inode_owner_or_capable(ns, inode))
+> > +       if (!inode_owner_or_capable(&init_user_ns, inode))
+> >                 return -EPERM;
+> >
+> >         if (value) {
+> >                 shift_acl_xattr_ids(inode->i_sb->s_user_ns,
+> >                                     loweri->i_sb->s_user_ns,
+> >                                     (void *)value, size);
+> > -               err = shiftfs_setxattr(ns, dentry, inode, handler->name, value,
+> > +               err = shiftfs_setxattr(&init_user_ns, dentry, inode, handler->name, value,
+> >                                        size, flags);
+> >         } else {
+> > -               err = shiftfs_removexattr(ns, dentry, handler->name);
+> > +               err = shiftfs_removexattr(&init_user_ns, dentry, handler->name);
+> >         }
+> >
+> >         if (!err)
+> > @@ -2017,6 +2017,16 @@ static int shiftfs_fill_super(struct super_block *sb, void *raw_data,
+> >                 goto out_put_path;
+> >         }
+> >
+> > +       /*
+> > +        * It makes no sense to handle idmapped layers from shiftfs.
+> > +        * And we didn't support it properly anyway.
+> > +        */
+> > +       if (is_idmapped_mnt(path.mnt)) {
+> > +               err = -EINVAL;
+> > +               pr_err("idmapped layers are currently not supported\n");
+> > +               goto out_put_path;
+> > +       }
+> > +
+> >         sb->s_flags |= SB_POSIXACL;
+> >
+> >         if (sbinfo->mark) {
+> > --
+> > 2.34.1
+> >
+> >
+> > --
+> > kernel-team mailing list
+> > kernel-team at lists.ubuntu.com
+> > https://lists.ubuntu.com/mailman/listinfo/kernel-team
+>
+>
+>
+> --
+> okurrr,
+>
+> Dimitri
+
+
+
+From andrea.righi at canonical.com  Fri Nov 18 08:58:17 2022
+From: andrea.righi at canonical.com (Andrea Righi)
+Date: Fri, 18 Nov 2022 09:58:17 +0100
+Subject: NACK[K]: [SRU][J/K][PATCH] UBUNTU: [SAUCE] shiftfs: fix permanent
+ -EOVERFLOW inside the CT
+In-Reply-To: <20221117142347.412558-1-aleksandr.mikhalitsyn@canonical.com>
+References: <20221117142347.412558-1-aleksandr.mikhalitsyn@canonical.com>
+Message-ID: <Y3dJKaa6SKHYzw6x@righiandr-XPS-13-7390>
+
+On Thu, Nov 17, 2022 at 03:23:47PM +0100, Alexander Mikhalitsyn wrote:
+> BugLink: https://bugs.launchpad.net/bugs/1990849
+> 
+> We haven't supported idmapped layers with shiftfs and moreover, that makes
+> no sense. Once lower fs support idmapped mounts when shiftfs is not needed.
+> 
+> Starting from linux-image-5.15.0-48-generic users started seeing EOVERFLOW
+> errors from the userspace side on a trivial fs operations inside the containers.
+> 
+> This is caused by patches ("fs: tweak fsuidgid_has_mapping()"),
+> ("fs: support mapped mounts of mapped filesystems"). These patches extends
+> and enables idmapped mounts support in Ubuntu kernel, but the problem is
+> that shiftfs was not properly ported.
+> 
+> See also:
+> ("namei: prepare for idmapped mounts")
+> https://lore.kernel.org/all/20210121131959.646623-15-christian.brauner at ubuntu.com/
+> ("overlayfs: do not mount on top of idmapped mounts")
+> https://lore.kernel.org/all/20210121131959.646623-29-christian.brauner at ubuntu.com/
+> as a reference.
+> 
+> Fixes: d347e71d2c0 ("UBUNTU: [SAUCE] shiftfs: support kernel 5.15")
+> Reported-by: Thomas Parrott <thomas.parrott at canonical.com>
+> Signed-off-by: Alexander Mikhalitsyn <aleksandr.mikhalitsyn at canonical.com>
+
+We already have something similar in kinetic/master-next (using
+&init_user_ns), we had to do that, because otherwise we were breaking
+lxd (see the commit already mentioned by Dimitri).
+
+So, I don't disagree with this patch, but it needs to be rebased on top
+of master-next to properly apply it.
+
+Thanks,
+-Andrea

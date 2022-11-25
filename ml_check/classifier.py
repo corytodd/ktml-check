@@ -30,7 +30,7 @@ RE_PATCH = re.compile(
 
 
 class Category(Flag):
-    # Not a patch, just some noise on the mailing list
+    # Not a patch, could be a reply or just noise
     NotPatch = auto()
     # A cover letter or single patch
     Patch0 = auto()
@@ -63,7 +63,7 @@ class SimpleClassifier(MessageClassifier):
 
     def get_category(self, message) -> Category:
         subject = message.subject
-        is_patch = subject is not None and re.match(RE_PATCH, subject)
+        is_patch = self.__is_patch(message)
         is_epoch = message.in_reply_to is None
         is_ack = subject is not None and subject.lower().startswith("ack")
         is_nak = subject is not None and (
@@ -85,6 +85,44 @@ class SimpleClassifier(MessageClassifier):
             return Category.PatchN
 
         return Category.NotPatch
+
+    def __is_patch(self, message):
+        # Soft check on the subject
+        if message.subject is None or not re.search(RE_PATCH, message.subject):
+            return False
+
+        # Soft check the message id for git-send-email
+        if "git-send-email" in message.message_id:
+            return True
+
+        #
+        # Replies re-use the subject and don't always use the RE: prefix
+        # Inspect the body for git-diffs. This will handle single patches.
+        is_patch = False
+        try:
+            patch = PatchSet(message.body)
+            is_patch = any(patch)
+        except:
+            pass
+
+        #
+        # Cover letters are harder to detect. SRU patches at least have a
+        # template with static bits we can look for. Of course these are
+        # not perfect either. Require any two of these phrases.
+        if not is_patch:
+            sru_template = (
+                "[Impact]",
+                "[Fix]",
+                "[Test]",
+                "[Test Plan]",
+                "[Where problems could occur]",
+            )
+            matches = len([s for s in sru_template if s in message.body])
+            is_patch = matches >= 2
+
+        # At this point, the subject is wrong, no patch is present, and they
+        # did not use git-send-email. We can't help them.
+        return is_patch
 
     def get_affected_kernels(self, message) -> List[str]:
         return []
