@@ -7,10 +7,10 @@ from ml_check.kteam_mbox import KTeamMbox
 
 
 class BaseTest(unittest.TestCase):
-    def get_messages(self, mbox_path):
+    def get_messages(self, mbox_path, classifier):
         """Returns messages from mbox file"""
         self.assertTrue(os.path.exists(mbox_path))
-        for message in KTeamMbox.read_messages(mbox_path):
+        for message in KTeamMbox.read_messages(mbox_path, classifier):
             yield message
 
 
@@ -18,9 +18,11 @@ class TestClassifier(BaseTest):
     def test_single_nak(self):
         """An email thread with a single thread of replies and 1 nak"""
         # Setup
-        messages = [m for m in self.get_messages("tests/data/single_nak.mbox")]
-        self.assertEqual(len(messages), 4)
         classifier = SimpleClassifier()
+        messages = [
+            m for m in self.get_messages("tests/data/single_nak.mbox", classifier)
+        ]
+        self.assertEqual(len(messages), 4)
         cat_count = defaultdict(int)
 
         # Execute
@@ -38,9 +40,11 @@ class TestClassifier(BaseTest):
     def test_single_ack(self):
         """An email thread with a single thread of replies and 1 ack"""
         # Setup
-        messages = [m for m in self.get_messages("tests/data/single_ack.mbox")]
-        self.assertEqual(len(messages), 6)
         classifier = SimpleClassifier()
+        messages = [
+            m for m in self.get_messages("tests/data/single_ack.mbox", classifier)
+        ]
+        self.assertEqual(len(messages), 6)
         cat_count = defaultdict(int)
 
         # Execute

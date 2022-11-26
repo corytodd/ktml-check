@@ -152,4 +152,4 @@ class SimpleClassifier(MessageClassifier):
             return False
 
     def get_affected_kernels(self, message) -> List[str]:
-        return []
+        raise NotImplemented()

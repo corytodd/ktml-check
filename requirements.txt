@@ -4,3 +4,4 @@ black
 networkx
 requests
 unidiff
+pytest
