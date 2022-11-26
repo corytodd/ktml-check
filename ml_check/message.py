@@ -207,6 +207,19 @@ Message-Id: {message_id}
         self.category = classifier.get_category(self)
         return self.category
 
+    def clone_with(self, **kwargs):
+        """Create a clone of this message replacing any fields present in kwargs"""
+        return Message(
+            subject=kwargs.get("subject", self.subject),
+            message_id=kwargs.get("message_id", self.message_id),
+            in_reply_to=kwargs.get("in_reply_to", self.in_reply_to),
+            references=kwargs.get("references", self.references),
+            timestamp=kwargs.get("timestamp", self.timestamp),
+            body=kwargs.get("body", self.body),
+            sender=kwargs.get("sender", self.sender),
+            category=kwargs.get("category", self.category),
+        )
+
     def __hash__(self):
         """Implement for graph relationship"""
         return hash((self.subject, self.message_id, self.in_reply_to, self.timestamp))
