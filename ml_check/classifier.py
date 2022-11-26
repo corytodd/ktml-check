@@ -63,16 +63,19 @@ class SimpleClassifier(MessageClassifier):
     """A regex/pattern based approach"""
 
     def get_category(self, message) -> Category:
-        subject = message.subject
+        # Refuse to parse a message without a subject
+        if message.subject is None:
+            return Category.NotPatch
+
         is_cover_letter = self.__is_cover_letter(message)
         is_patch = self.__is_patch(message)
-        is_ack = subject is not None and subject.lower().startswith("ack")
-        is_nak = subject is not None and (
+        is_ack = message.subject.lower().startswith("ack")
+        is_nak = (
             # Yup, NAC/NAK/NAC K seems to come in many flavors
-            subject.lower().startswith("nak")
-            or subject.lower().startswith("nac")
+            message.subject.lower().startswith("nak")
+            or message.subject.lower().startswith("nac")
         )
-        is_applied = subject is not None and subject.lower().startswith("applied")
+        is_applied = message.subject.lower().startswith("applied")
 
         if is_applied:
             return Category.PatchApplied
@@ -105,39 +108,31 @@ class SimpleClassifier(MessageClassifier):
         return is_cover_letter
 
     def __is_patch(self, message):
-        is_patch = False
         #
         # Skip subjects that do not conform
         if not self.__subject_looks_like_patch(message):
-            is_patch = False
+            return False
 
         #
         # It would be weird to send a non-patch with git-send-email
-        if not is_patch:
-            is_patch = self.__is_git_send_email(message)
+        is_git_send = self.__is_git_send_email(message)
 
         #
         # Replies re-use the subject and don't always use the RE: prefix
         # Inspect the body for git-diffs. This will handle single patches.
-        if not is_patch:
-            is_patch = self.__contains_patch(message)
+        is_content_patch = self.__contains_patch(message)
 
         #
         # This might be a cover letter which has all the attributes
         # but would be lacking an actual patch.
-        if not is_patch:
-            is_patch = self.__is_cover_letter(message)
+        is_cover_leter = self.__is_cover_letter(message)
 
-        # At this point, the subject is wrong, no patch is present, and they
-        # did not use git-send-email. We can't help them.
-        return is_patch
+        return any([is_git_send, is_content_patch, is_cover_leter])
 
     def __is_git_send_email(self, message):
         return "git-send-email" in message.message_id
 
     def __subject_looks_like_patch(self, message):
-        if message.subject is None:
-            return False
         if not re.search(RE_PATCH, message.subject):
             return False
         return True
@@ -152,4 +147,4 @@ class SimpleClassifier(MessageClassifier):
             return False
 
     def get_affected_kernels(self, message) -> List[str]:
-        raise NotImplemented()
+        raise NotImplementedError()
