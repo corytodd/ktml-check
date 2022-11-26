@@ -1,0 +1,209 @@
+From dimitri.ledkov at canonical.com  Tue Nov  1 08:30:27 2022
+From: dimitri.ledkov at canonical.com (Dimitri John Ledkov)
+Date: Tue,  1 Nov 2022 09:30:27 +0100
+Subject: [UNSTABLE][PATCH v2] UBUNTU: [Config] Enable mtune z16
+Message-ID: <20221101083027.6095-1-dimitri.ledkov@canonical.com>
+
+Set mtune to z16
+
+BugLink: https://bugs.launchpad.net/bugs/1982833
+
+Signed-off-by: Dimitri John Ledkov <dimitri.ledkov at canonical.com>
+---
+
+ Changes since v1:
+ - add annotation note on the tune key with bug number, and future
+   advice.
+
+ debian.master/config/annotations          | 5 ++++-
+ debian.master/config/config.common.ubuntu | 6 +++---
+ 2 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/debian.master/config/annotations b/debian.master/config/annotations
+index bde0eda6c6f0..aedf156bc50d 100644
+--- a/debian.master/config/annotations
++++ b/debian.master/config/annotations
+@@ -13581,6 +13581,7 @@ CONFIG_MARCH_ZEC12                              policy<{'s390x': 'n'}>
+ CONFIG_MARCH_Z13                                policy<{'s390x': 'y'}>
+ CONFIG_MARCH_Z14                                policy<{'s390x': 'n'}>
+ CONFIG_MARCH_Z15                                policy<{'s390x': 'n'}>
++CONFIG_MARCH_Z16                                policy<{'s390x': 'n'}>
+ 
+ # Menu: Processor type and features >> Support for extended (non-PC) x86 platforms >> Architecture: x86
+ CONFIG_X86_NUMACHIP                             policy<{'amd64': 'y'}>
+@@ -13650,7 +13651,9 @@ CONFIG_TUNE_Z196                                policy<{'s390x': 'n'}>
+ CONFIG_TUNE_ZEC12                               policy<{'s390x': 'n'}>
+ CONFIG_TUNE_Z13                                 policy<{'s390x': 'n'}>
+ CONFIG_TUNE_Z14                                 policy<{'s390x': 'n'}>
+-CONFIG_TUNE_Z15                                 policy<{'s390x': 'y'}>
++CONFIG_TUNE_Z15                                 policy<{'s390x': 'n'}>
++CONFIG_TUNE_Z16                                 policy<{'s390x': 'y'}>
++CONFIG_TUNE_Z16                                 note<LP: #1982833 in general, always pick the newest tune available>
+ 
+ # Menu: Processor type and features >> Virtual address space size >> Architecture: arm64
+ CONFIG_ARM64_VA_BITS_39                         policy<{'arm64-generic': 'n'}>
+diff --git a/debian.master/config/config.common.ubuntu b/debian.master/config/config.common.ubuntu
+index 7ee9f98f2716..8b7fcfb3b19a 100644
+--- a/debian.master/config/config.common.ubuntu
++++ b/debian.master/config/config.common.ubuntu
+@@ -6137,8 +6137,8 @@ CONFIG_MAPPING_DIRTY_HELPERS=y
+ CONFIG_MARCH_Z13=y
+ # CONFIG_MARCH_Z14 is not set
+ # CONFIG_MARCH_Z15 is not set
+-CONFIG_MARCH_Z15_TUNE=y
+ # CONFIG_MARCH_Z16 is not set
++CONFIG_MARCH_Z16_TUNE=y
+ # CONFIG_MARCH_Z196 is not set
+ # CONFIG_MARCH_ZEC12 is not set
+ CONFIG_MARVELL_10G_PHY=m
+@@ -11978,8 +11978,8 @@ CONFIG_TUNE_GENERIC=y
+ # CONFIG_TUNE_Z10 is not set
+ # CONFIG_TUNE_Z13 is not set
+ # CONFIG_TUNE_Z14 is not set
+-CONFIG_TUNE_Z15=y
+-# CONFIG_TUNE_Z16 is not set
++# CONFIG_TUNE_Z15 is not set
++CONFIG_TUNE_Z16=y
+ # CONFIG_TUNE_Z196 is not set
+ # CONFIG_TUNE_ZEC12 is not set
+ # CONFIG_TUN_VNET_CROSS_LE is not set
+-- 
+2.34.1
+
+
+
+From paolo.pisati at canonical.com  Tue Nov  1 09:10:26 2022
+From: paolo.pisati at canonical.com (Paolo Pisati)
+Date: Tue, 1 Nov 2022 10:10:26 +0100
+Subject: ACK: Re: [UNSTABLE][PATCH v2] UBUNTU: [Config] Enable mtune z16
+In-Reply-To: <20221101083027.6095-1-dimitri.ledkov@canonical.com>
+References: <20221101083027.6095-1-dimitri.ledkov@canonical.com>
+Message-ID: <Y2Digrl0w+zheNUG@akinoame>
+
+On Tue, Nov 01, 2022 at 09:30:27AM +0100, Dimitri John Ledkov wrote:
+> Set mtune to z16
+> 
+> BugLink: https://bugs.launchpad.net/bugs/1982833
+> 
+> Signed-off-by: Dimitri John Ledkov <dimitri.ledkov at canonical.com>
+
+Acked-by: Paolo Pisati <paolo.pisati at canonical.com>
+-- 
+bye,
+p.
+
+
+
+From cory.todd at canonical.com  Tue Nov  1 09:24:13 2022
+From: cory.todd at canonical.com (Cory Todd)
+Date: Tue, 1 Nov 2022 02:24:13 -0700
+Subject: ACK: [UNSTABLE][PATCH v2] UBUNTU: [Config] Enable mtune z16
+In-Reply-To: <20221101083027.6095-1-dimitri.ledkov@canonical.com>
+References: <20221101083027.6095-1-dimitri.ledkov@canonical.com>
+Message-ID: <Y2DlvSTgxC4KtVnI@amelia.home.arpa>
+
+On Tue, Nov 01, 2022 at 09:30:27AM +0100, Dimitri John Ledkov wrote:
+> Set mtune to z16
+> 
+> BugLink: https://bugs.launchpad.net/bugs/1982833
+> 
+> Signed-off-by: Dimitri John Ledkov <dimitri.ledkov at canonical.com>
+> ---
+
+Acked-by: Cory Todd <cory.todd at canonical.com>
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 659 bytes
+Desc: not available
+URL: <https://lists.ubuntu.com/archives/kernel-team/attachments/20221101/297acead/attachment.sig>
+
+
+
+From dimitri.ledkov at canonical.com  Tue Nov  1 13:11:53 2022
+From: dimitri.ledkov at canonical.com (Dimitri John Ledkov)
+Date: Tue, 1 Nov 2022 14:11:53 +0100
+Subject: Applied: [UNSTABLE][PATCH v2] UBUNTU: [Config] Enable mtune z16
+In-Reply-To: <20221101083027.6095-1-dimitri.ledkov@canonical.com>
+References: <20221101083027.6095-1-dimitri.ledkov@canonical.com>
+Message-ID: <CADWks+Y9OvywTx644dStUUahBasy7DGULchFmyqVRg4OtoECRA@mail.gmail.com>
+
+applied to unstable
+
+On Tue, 1 Nov 2022 at 09:29, Dimitri John Ledkov
+<dimitri.ledkov at canonical.com> wrote:
+>
+> Set mtune to z16
+>
+> BugLink: https://bugs.launchpad.net/bugs/1982833
+>
+> Signed-off-by: Dimitri John Ledkov <dimitri.ledkov at canonical.com>
+> ---
+>
+>  Changes since v1:
+>  - add annotation note on the tune key with bug number, and future
+>    advice.
+>
+>  debian.master/config/annotations          | 5 ++++-
+>  debian.master/config/config.common.ubuntu | 6 +++---
+>  2 files changed, 7 insertions(+), 4 deletions(-)
+>
+> diff --git a/debian.master/config/annotations b/debian.master/config/annotations
+> index bde0eda6c6f0..aedf156bc50d 100644
+> --- a/debian.master/config/annotations
+> +++ b/debian.master/config/annotations
+> @@ -13581,6 +13581,7 @@ CONFIG_MARCH_ZEC12                              policy<{'s390x': 'n'}>
+>  CONFIG_MARCH_Z13                                policy<{'s390x': 'y'}>
+>  CONFIG_MARCH_Z14                                policy<{'s390x': 'n'}>
+>  CONFIG_MARCH_Z15                                policy<{'s390x': 'n'}>
+> +CONFIG_MARCH_Z16                                policy<{'s390x': 'n'}>
+>
+>  # Menu: Processor type and features >> Support for extended (non-PC) x86 platforms >> Architecture: x86
+>  CONFIG_X86_NUMACHIP                             policy<{'amd64': 'y'}>
+> @@ -13650,7 +13651,9 @@ CONFIG_TUNE_Z196                                policy<{'s390x': 'n'}>
+>  CONFIG_TUNE_ZEC12                               policy<{'s390x': 'n'}>
+>  CONFIG_TUNE_Z13                                 policy<{'s390x': 'n'}>
+>  CONFIG_TUNE_Z14                                 policy<{'s390x': 'n'}>
+> -CONFIG_TUNE_Z15                                 policy<{'s390x': 'y'}>
+> +CONFIG_TUNE_Z15                                 policy<{'s390x': 'n'}>
+> +CONFIG_TUNE_Z16                                 policy<{'s390x': 'y'}>
+> +CONFIG_TUNE_Z16                                 note<LP: #1982833 in general, always pick the newest tune available>
+>
+>  # Menu: Processor type and features >> Virtual address space size >> Architecture: arm64
+>  CONFIG_ARM64_VA_BITS_39                         policy<{'arm64-generic': 'n'}>
+> diff --git a/debian.master/config/config.common.ubuntu b/debian.master/config/config.common.ubuntu
+> index 7ee9f98f2716..8b7fcfb3b19a 100644
+> --- a/debian.master/config/config.common.ubuntu
+> +++ b/debian.master/config/config.common.ubuntu
+> @@ -6137,8 +6137,8 @@ CONFIG_MAPPING_DIRTY_HELPERS=y
+>  CONFIG_MARCH_Z13=y
+>  # CONFIG_MARCH_Z14 is not set
+>  # CONFIG_MARCH_Z15 is not set
+> -CONFIG_MARCH_Z15_TUNE=y
+>  # CONFIG_MARCH_Z16 is not set
+> +CONFIG_MARCH_Z16_TUNE=y
+>  # CONFIG_MARCH_Z196 is not set
+>  # CONFIG_MARCH_ZEC12 is not set
+>  CONFIG_MARVELL_10G_PHY=m
+> @@ -11978,8 +11978,8 @@ CONFIG_TUNE_GENERIC=y
+>  # CONFIG_TUNE_Z10 is not set
+>  # CONFIG_TUNE_Z13 is not set
+>  # CONFIG_TUNE_Z14 is not set
+> -CONFIG_TUNE_Z15=y
+> -# CONFIG_TUNE_Z16 is not set
+> +# CONFIG_TUNE_Z15 is not set
+> +CONFIG_TUNE_Z16=y
+>  # CONFIG_TUNE_Z196 is not set
+>  # CONFIG_TUNE_ZEC12 is not set
+>  # CONFIG_TUN_VNET_CROSS_LE is not set
+> --
+> 2.34.1
+>
+
+
+-- 
+okurrr,
+
+Dimitri

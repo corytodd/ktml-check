@@ -1,0 +1,345 @@
+From dimitri.ledkov at canonical.com  Thu Nov 17 16:38:16 2022
+From: dimitri.ledkov at canonical.com (Dimitri John Ledkov)
+Date: Thu, 17 Nov 2022 16:38:16 +0000
+Subject: [PATCH 0/3] [B][F][J][K][L][SRU][PATCH] UBUNTU: [Packaging] Expose
+ built-in trusted and revoked certificates
+Message-ID: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+
+BugLink: https://bugs.launchpad.net/bugs/1996892
+
+Kernels have a set of builtin trusted and revoked certificates as a
+bundle.
+
+It is not very easy to access them, one needs to either download linux
+kernel package source code; or boot the kernel to look up builtin
+hashes; and then find certificates externally.
+
+It would be more convenient for inspection to expose these in the
+buildinfo package, which already exposes auxiliary kernel information.
+
+Dimitri John Ledkov (1):
+  [J][K][L][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+    revoked certificates
+  [F][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+    revoked certificates    
+  [B][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+    revoked certificates    
+
+ debian/rules.d/2-binary-arch.mk | 2 ++
+ 1 file changed, 2 insertions(+)
+
+-- 
+2.34.1
+
+
+
+From dimitri.ledkov at canonical.com  Thu Nov 17 16:38:17 2022
+From: dimitri.ledkov at canonical.com (Dimitri John Ledkov)
+Date: Thu, 17 Nov 2022 16:38:17 +0000
+Subject: [J][K][L][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+ revoked certificates
+In-Reply-To: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+References: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+Message-ID: <20221117163819.972405-2-dimitri.ledkov@canonical.com>
+
+BugLink: https://bugs.launchpad.net/bugs/1996892
+
+Kernels have a set of builtin trusted and revoked certificates as a
+bundle.
+
+It is not very easy to access them, one needs to either download linux
+kernel package source code; or boot the kernel to look up builtin hashes;
+and then find certificates externally.
+
+It would be more convenient for inspection to expose these in the
+buildinfo package, which already exposes auxiliary kernel information.
+
+Signed-off-by: Dimitri John Ledkov <dimitri.ledkov at canonical.com>
+---
+ debian/rules.d/2-binary-arch.mk | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/debian/rules.d/2-binary-arch.mk b/debian/rules.d/2-binary-arch.mk
+index eb3acba7d7..60513c43b9 100644
+--- a/debian/rules.d/2-binary-arch.mk
++++ b/debian/rules.d/2-binary-arch.mk
+@@ -530,6 +530,8 @@ endif
+ 		install -m644 $(abidir)/$*.fwinfo.builtin \
+ 			$(pkgdir_bldinfo)/usr/lib/linux/$(abi_release)-$*/fwinfo.builtin; \
+ 	fi
++	install -m644 $(DROOT)/canonical-certs.pem $(pkgdir_bldinfo)/usr/lib/linux/$(abi_release)-$*/canonical-certs.pem
++	install -m644 $(DROOT)/canonical-revoked-certs.pem $(pkgdir_bldinfo)/usr/lib/linux/$(abi_release)-$*/canonical-revoked-certs.pem
+ 
+ ifneq ($(full_build),false)
+ 	# Clean out this flavours build directory.
+-- 
+2.34.1
+
+
+
+From dimitri.ledkov at canonical.com  Thu Nov 17 16:38:18 2022
+From: dimitri.ledkov at canonical.com (Dimitri John Ledkov)
+Date: Thu, 17 Nov 2022 16:38:18 +0000
+Subject: [F][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+ revoked certificates
+In-Reply-To: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+References: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+Message-ID: <20221117163819.972405-3-dimitri.ledkov@canonical.com>
+
+BugLink: https://bugs.launchpad.net/bugs/1996892
+
+Kernels have a set of builtin trusted and revoked certificates as a
+bundle.
+
+It is not very easy to access them, one needs to either download linux
+kernel package source code; or boot the kernel to look up builtin hashes;
+and then find certificates externally.
+
+It would be more convenient for inspection to expose these in the
+buildinfo package, which already exposes auxiliary kernel information.
+
+Signed-off-by: Dimitri John Ledkov <dimitri.ledkov at canonical.com>
+---
+ debian/rules.d/2-binary-arch.mk | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/debian/rules.d/2-binary-arch.mk b/debian/rules.d/2-binary-arch.mk
+index 0542c12a70..747cc9992e 100644
+--- a/debian/rules.d/2-binary-arch.mk
++++ b/debian/rules.d/2-binary-arch.mk
+@@ -504,6 +504,8 @@ endif
+ 		$(pkgdir_bldinfo)/usr/lib/linux/$(abi_release)-$*/retpoline
+ 	install -m644 $(abidir)/$*.compiler \
+ 		$(pkgdir_bldinfo)/usr/lib/linux/$(abi_release)-$*/compiler
++	install -m644 $(DROOT)/canonical-certs.pem $(pkgdir_bldinfo)/usr/lib/linux/$(abi_release)-$*/canonical-certs.pem
++	install -m644 $(DROOT)/canonical-revoked-certs.pem $(pkgdir_bldinfo)/usr/lib/linux/$(abi_release)-$*/canonical-revoked-certs.pem
+ 
+ headers_tmp := $(CURDIR)/debian/tmp-headers
+ headers_dir := $(CURDIR)/debian/linux-libc-dev
+-- 
+2.34.1
+
+
+
+From dimitri.ledkov at canonical.com  Thu Nov 17 16:38:19 2022
+From: dimitri.ledkov at canonical.com (Dimitri John Ledkov)
+Date: Thu, 17 Nov 2022 16:38:19 +0000
+Subject: [B][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+ revoked certificates
+In-Reply-To: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+References: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+Message-ID: <20221117163819.972405-4-dimitri.ledkov@canonical.com>
+
+BugLink: https://bugs.launchpad.net/bugs/1996892
+
+Kernels have a set of builtin trusted and revoked certificates as a
+bundle.
+
+It is not very easy to access them, one needs to either download linux
+kernel package source code; or boot the kernel to look up builtin hashes;
+and then find certificates externally.
+
+It would be more convenient for inspection to expose these in the
+buildinfo package, which already exposes auxiliary kernel information.
+
+Signed-off-by: Dimitri John Ledkov <dimitri.ledkov at canonical.com>
+---
+ debian/rules.d/2-binary-arch.mk | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/debian/rules.d/2-binary-arch.mk b/debian/rules.d/2-binary-arch.mk
+index db990d5bee..2ec1ac0962 100644
+--- a/debian/rules.d/2-binary-arch.mk
++++ b/debian/rules.d/2-binary-arch.mk
+@@ -480,6 +480,8 @@ endif
+ 		$(pkgdir_bldinfo)/usr/lib/linux/$(abi_release)-$*/retpoline
+ 	install -m644 $(abidir)/$*.compiler \
+ 		$(pkgdir_bldinfo)/usr/lib/linux/$(abi_release)-$*/compiler
++	install -m644 $(DROOT)/canonical-certs.pem $(pkgdir_bldinfo)/usr/lib/linux/$(abi_release)-$*/canonical-certs.pem
++	install -m644 $(DROOT)/canonical-revoked-certs.pem $(pkgdir_bldinfo)/usr/lib/linux/$(abi_release)-$*/canonical-revoked-certs.pem
+ 
+ ifeq ($(fit_signed),true)
+ 	install -d $(signingv)
+-- 
+2.34.1
+
+
+
+From tim.gardner at canonical.com  Fri Nov 18 18:12:22 2022
+From: tim.gardner at canonical.com (Tim Gardner)
+Date: Fri, 18 Nov 2022 11:12:22 -0700
+Subject: ACK/Cmnt: [PATCH 0/3] [B][F][J][K][L][SRU][PATCH] UBUNTU: [Packaging]
+ Expose built-in trusted and revoked certificates
+In-Reply-To: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+References: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+Message-ID: <2e1856bd-a219-903d-1a38-4133ce72e7b3@canonical.com>
+
+On 11/17/22 9:38 AM, Dimitri John Ledkov wrote:
+> BugLink: https://bugs.launchpad.net/bugs/1996892
+> 
+> Kernels have a set of builtin trusted and revoked certificates as a
+> bundle.
+> 
+> It is not very easy to access them, one needs to either download linux
+> kernel package source code; or boot the kernel to look up builtin
+> hashes; and then find certificates externally.
+> 
+> It would be more convenient for inspection to expose these in the
+> buildinfo package, which already exposes auxiliary kernel information.
+> 
+> Dimitri John Ledkov (1):
+>    [J][K][L][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+>      revoked certificates
+>    [F][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+>      revoked certificates
+>    [B][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+>      revoked certificates
+> 
+>   debian/rules.d/2-binary-arch.mk | 2 ++
+>   1 file changed, 2 insertions(+)
+> 
+Acked-by: Tim Gardner <tim.gardner at canonical.com>
+
+Seems fine as long those keys aren't secret.
+-- 
+-----------
+Tim Gardner
+Canonical, Inc
+
+
+
+From dimitri.ledkov at canonical.com  Mon Nov 21 14:58:34 2022
+From: dimitri.ledkov at canonical.com (Dimitri John Ledkov)
+Date: Mon, 21 Nov 2022 14:58:34 +0000
+Subject: ACK/Cmnt: [PATCH 0/3] [B][F][J][K][L][SRU][PATCH] UBUNTU:
+ [Packaging] Expose built-in trusted and revoked certificates
+In-Reply-To: <2e1856bd-a219-903d-1a38-4133ce72e7b3@canonical.com>
+References: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+ <2e1856bd-a219-903d-1a38-4133ce72e7b3@canonical.com>
+Message-ID: <CADWks+YnJEqM0Q722XD214TU2wQAkqyTDaMxdN2YueEPbULUfg@mail.gmail.com>
+
+On Fri, 18 Nov 2022 at 18:12, Tim Gardner <tim.gardner at canonical.com> wrote:
+>
+> On 11/17/22 9:38 AM, Dimitri John Ledkov wrote:
+> > BugLink: https://bugs.launchpad.net/bugs/1996892
+> >
+> > Kernels have a set of builtin trusted and revoked certificates as a
+> > bundle.
+> >
+> > It is not very easy to access them, one needs to either download linux
+> > kernel package source code; or boot the kernel to look up builtin
+> > hashes; and then find certificates externally.
+> >
+> > It would be more convenient for inspection to expose these in the
+> > buildinfo package, which already exposes auxiliary kernel information.
+> >
+> > Dimitri John Ledkov (1):
+> >    [J][K][L][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+> >      revoked certificates
+> >    [F][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+> >      revoked certificates
+> >    [B][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+> >      revoked certificates
+> >
+> >   debian/rules.d/2-binary-arch.mk | 2 ++
+> >   1 file changed, 2 insertions(+)
+> >
+> Acked-by: Tim Gardner <tim.gardner at canonical.com>
+>
+> Seems fine as long as those keys aren't secret.
+
+These are not keys, but public well-known x.509 certificates embedded
+in the pkcs7 signature on every signed vmlinuz.
+The private keys for all of those are obviously inaccessible to any of
+us, and are sealed in the singing service.
+
+-- 
+okurrr,
+
+Dimitri
+
+
+
+From cory.todd at canonical.com  Mon Nov 21 15:23:10 2022
+From: cory.todd at canonical.com (Cory Todd)
+Date: Mon, 21 Nov 2022 07:23:10 -0800
+Subject: ACK: [PATCH 0/3] [B][F][J][K][L][SRU][PATCH] UBUNTU: [Packaging]
+ Expose built-in trusted and revoked certificates
+In-Reply-To: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+References: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+Message-ID: <Y3uX3kT1By4io3j/@amelia.home.arpa>
+
+On Thu, Nov 17, 2022 at 04:38:16PM +0000, Dimitri John Ledkov wrote:
+> BugLink: https://bugs.launchpad.net/bugs/1996892
+> 
+> Kernels have a set of builtin trusted and revoked certificates as a
+> bundle.
+> 
+> It is not very easy to access them, one needs to either download linux
+> kernel package source code; or boot the kernel to look up builtin
+> hashes; and then find certificates externally.
+> 
+> It would be more convenient for inspection to expose these in the
+> buildinfo package, which already exposes auxiliary kernel information.
+> 
+> Dimitri John Ledkov (1):
+>   [J][K][L][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+>     revoked certificates
+>   [F][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+>     revoked certificates    
+>   [B][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+>     revoked certificates    
+> 
+>  debian/rules.d/2-binary-arch.mk | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+
+Acked-by: Cory Todd <cory.todd at canonical.com>
+
+
+
+From stefan.bader at canonical.com  Tue Nov 22 09:13:31 2022
+From: stefan.bader at canonical.com (Stefan Bader)
+Date: Tue, 22 Nov 2022 10:13:31 +0100
+Subject: APPLIED: [PATCH 0/3] [B][F][J][K][SRU][PATCH] UBUNTU: [Packaging]
+ Expose built-in trusted and revoked certificates
+In-Reply-To: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+References: <20221117163819.972405-1-dimitri.ledkov@canonical.com>
+Message-ID: <bf5bebe8-7a0b-b2f2-9165-2634c117835a@canonical.com>
+
+On 17.11.22 17:38, Dimitri John Ledkov wrote:
+> BugLink: https://bugs.launchpad.net/bugs/1996892
+> 
+> Kernels have a set of builtin trusted and revoked certificates as a
+> bundle.
+> 
+> It is not very easy to access them, one needs to either download linux
+> kernel package source code; or boot the kernel to look up builtin
+> hashes; and then find certificates externally.
+> 
+> It would be more convenient for inspection to expose these in the
+> buildinfo package, which already exposes auxiliary kernel information.
+> 
+> Dimitri John Ledkov (1):
+>    [J][K][L][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+>      revoked certificates
+>    [F][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+>      revoked certificates
+>    [B][SRU][PATCH] UBUNTU: [Packaging] Expose built-in trusted and
+>      revoked certificates
+> 
+>   debian/rules.d/2-binary-arch.mk | 2 ++
+>   1 file changed, 2 insertions(+)
+> 
+
+Applied to kinetic,jammy,focal,bionic:linux/master-next. Thanks.
+
+-Stefan
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: OpenPGP_signature
+Type: application/pgp-signature
+Size: 833 bytes
+Desc: OpenPGP digital signature
+URL: <https://lists.ubuntu.com/archives/kernel-team/attachments/20221122/5ba99763/attachment.sig>

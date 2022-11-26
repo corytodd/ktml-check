@@ -1,0 +1,30 @@
+From kernel-team-bot at canonical.com  Tue Nov  1 13:36:13 2022
+From: kernel-team-bot at canonical.com (kernel-team-bot at canonical.com)
+Date: Tue, 01 Nov 2022 13:36:13 -0000
+Subject: [xenial] linux-azure 4.15.0-1154.169~16.04.1 uploaded (ABI bump)
+Message-ID: <mailman.29.1667309774.27858.kernel-team@lists.ubuntu.com>
+
+A new xenial kernel has been uploaded into proposed. Note the ABI bump. 
+The full changelog about all bug fixes contained in this upload can be found at:
+
+https://launchpad.net/ubuntu/xenial/+source/linux-azure/4.15.0-1154.169~16.04.1
+
+-- 
+This message was created by an automated script, maintained by the
+Ubuntu Kernel Team.
+
+
+From kernel-team-bot at canonical.com  Tue Nov  1 13:36:30 2022
+From: kernel-team-bot at canonical.com (kernel-team-bot at canonical.com)
+Date: Tue, 01 Nov 2022 13:36:30 -0000
+Subject: [trusty] linux-azure 4.15.0-1154.169~14.04.1 uploaded (ABI bump)
+Message-ID: <mailman.30.1667309791.27858.kernel-team@lists.ubuntu.com>
+
+A new trusty kernel has been uploaded into proposed. Note the ABI bump. 
+The full changelog about all bug fixes contained in this upload can be found at:
+
+https://launchpad.net/ubuntu/trusty/+source/linux-azure/4.15.0-1154.169~14.04.1
+
+-- 
+This message was created by an automated script, maintained by the
+Ubuntu Kernel Team.

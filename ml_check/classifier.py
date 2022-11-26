@@ -29,6 +29,9 @@ RE_PATCH = re.compile(
     re.IGNORECASE,
 )
 
+# [PATCH 0/N] format
+RE_PATCH0 = re.compile(r"\[PATCH\s+0\/\d+]", re.IGNORECASE)
+
 
 class Category(Flag):
     # Not a patch, could be a reply or just noise
@@ -104,6 +107,12 @@ class SimpleClassifier(MessageClassifier):
         )
         matches = len([s for s in sru_template if s in message.body])
         is_cover_letter = matches >= 2
+
+        #
+        # Maybe they used the PATCH 0/N format?
+        if not is_cover_letter:
+            if re.search(RE_PATCH0, message.subject):
+                is_cover_letter = True
 
         return is_cover_letter
 
