@@ -217,7 +217,8 @@ class KTeamMbox:
 
     def filter_patches(self, patch_filter: PatchFilter = DefaultPatchFilter):
         """Returns a list of patches and their email threads that are
-        suspected of needing additional review.
+        suspected of needing additional review. The returned PatchSets
+        will be globally classified.
         """
         for thread in self.__all_threads():
             patch_set = PatchSet(thread, self.classifier)
@@ -261,11 +262,11 @@ class KTeamMbox:
     @staticmethod
     def read_messages(mbox_path, classifier=None):
         """Helper for reading messages from an mbox file.
-        Malformed messages may be returned as None.
+        Malformed messages may be returned as None. Messages
+        that are parsed will be locally classified if a
+        classifier is provided.
         """
         with safe_mbox(mbox_path) as mbox:
             for mail in mbox:
-                message = Message.from_mail(mail)
-                if classifier:
-                    message.category = classifier.get_category(message)
+                message = Message.from_mail(mail, classifier)
                 yield message

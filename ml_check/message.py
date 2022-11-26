@@ -1,6 +1,15 @@
 """
 @file message.py
 @brief Email abstraction
+@detail
+The category field of Message is contextual. When a message is initially classified,
+we use what we call local classification. This means only information from the message
+itself is used for classification. However, sometimes in the context of an email thread, 
+the message category could change. That's what we call global classification. That is 
+handled from within the PatchSet class. For best results, messages should be collected
+into PatchSets and consumed from there.
+
+In otherwords, you probably don't want to be creating Message types directly.
 """
 
 import calendar
@@ -134,7 +143,7 @@ class Message:
         return config.THREAD_URL.format(year=year, month=month_name)
 
     @staticmethod
-    def from_mail(mail):
+    def from_mail(mail, classifier=None):
         """Create a message from a mailbox.mboxMessage"""
         message_id = mail.get("Message-Id")
         in_reply_to = mail.get("In-Reply-To")
@@ -158,6 +167,8 @@ class Message:
                 sender=sender,
                 category=Category.NotPatch,
             )
+            if classifier:
+                message.category = classifier.get_category(message)
         else:
             # Show some details about the message including a truncated body
             logger.debug(
