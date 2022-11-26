@@ -9,7 +9,7 @@ from ml_check.classifier import SimpleClassifier
 from ml_check.kteam_mbox import KTeamMbox, datetime_min_tz, periodic_mail_steps
 
 
-class TestKteamMbox(unittest.TestCase):
+class TestKTeamMboxUtils(unittest.TestCase):
     def test_datetime_min(self):
         """Test that the datetime.min replacement actually includes tz info"""
         # Setup
@@ -46,6 +46,8 @@ class TestKteamMbox(unittest.TestCase):
         self.assertTrue(all([m[0] in (2016, 2017) for m in mail_steps]))
         self.assertTrue(all([0 < m[1] <= 12 for m in mail_steps]))
 
+
+class TestKTeamMbox(unittest.TestCase):
     def test_clear_cache(self):
         """Ensure that the cache directory is wiped"""
         # Setup
