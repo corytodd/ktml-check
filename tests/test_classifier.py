@@ -10,8 +10,10 @@ class BaseTest(unittest.TestCase):
     def get_messages(self, mbox_path, classifier):
         """Returns messages from mbox file"""
         self.assertTrue(os.path.exists(mbox_path))
+        messages = []
         for message in KTeamMbox.read_messages(mbox_path, classifier):
-            yield message
+            messages.append(message)
+        return messages
 
 
 class TestClassifier(BaseTest):
@@ -19,9 +21,8 @@ class TestClassifier(BaseTest):
         """An email thread with a single thread of replies and 1 nak"""
         # Setup
         classifier = SimpleClassifier()
-        messages = [
-            m for m in self.get_messages("tests/data/single_nak.mbox", classifier)
-        ]
+        messages = self.get_messages("tests/data/single_nak.mbox", classifier)
+
         self.assertEqual(len(messages), 4)
         cat_count = defaultdict(int)
 
@@ -31,19 +32,27 @@ class TestClassifier(BaseTest):
             cat_count[category] += 1
 
         # Assert
-        self.assertEqual(cat_count[Category.PatchCoverLetter], 0)
-        self.assertEqual(cat_count[Category.PatchN], 1)
-        self.assertEqual(cat_count[Category.PatchNak], 1)
-        self.assertEqual(cat_count[Category.PatchAck], 0)
-        self.assertEqual(cat_count[Category.NotPatch], 2)
+        expect = {
+            Category.NotPatch: 2,
+            Category.PatchCoverLetter: 0,
+            Category.PatchN: 1,
+            Category.PatchAck: 0,
+            Category.PatchNak: 1,
+            Category.PatchApplied: 0,
+        }
+        for expect_cat, expect_count in expect.items():
+            self.assertEqual(
+                cat_count[expect_cat],
+                expect_count,
+                f"{expect_cat}={expect_count} but got {cat_count[expect_cat]}",
+            )
 
     def test_single_ack(self):
         """An email thread with a single thread of replies and 1 ack"""
         # Setup
         classifier = SimpleClassifier()
-        messages = [
-            m for m in self.get_messages("tests/data/single_ack.mbox", classifier)
-        ]
+        messages = self.get_messages("tests/data/single_ack.mbox", classifier)
+
         self.assertEqual(len(messages), 6)
         cat_count = defaultdict(int)
 
@@ -53,8 +62,85 @@ class TestClassifier(BaseTest):
             cat_count[category] += 1
 
         # Assert
-        self.assertEqual(cat_count[Category.PatchCoverLetter], 1)
-        self.assertEqual(cat_count[Category.PatchN], 4)
-        self.assertEqual(cat_count[Category.PatchNak], 0)
-        self.assertEqual(cat_count[Category.PatchAck], 1)
-        self.assertEqual(cat_count[Category.NotPatch], 0)
+        expect = {
+            Category.NotPatch: 0,
+            Category.PatchCoverLetter: 1,
+            Category.PatchN: 4,
+            Category.PatchAck: 1,
+            Category.PatchNak: 0,
+            Category.PatchApplied: 0,
+        }
+        for expect_cat, expect_count in expect.items():
+            self.assertEqual(
+                cat_count[expect_cat],
+                expect_count,
+                f"{expect_cat}={expect_count} but got {cat_count[expect_cat]}",
+            )
+
+    def test_applied(self):
+        """An email thread with two acks and an applied"""
+        # Setup
+        classifier = SimpleClassifier()
+        messages = self.get_messages("tests/data/applied.mbox", classifier)
+        self.assertEqual(len(messages), 4)
+        cat_count = defaultdict(int)
+
+        # Execute
+        for m in messages:
+            category = classifier.get_category(m)
+            cat_count[category] += 1
+
+        # Assert
+        expect = {
+            Category.NotPatch: 0,
+            Category.PatchCoverLetter: 0,
+            Category.PatchN: 1,
+            Category.PatchAck: 2,
+            Category.PatchNak: 0,
+            Category.PatchApplied: 1,
+        }
+        for expect_cat, expect_count in expect.items():
+            self.assertEqual(
+                cat_count[expect_cat],
+                expect_count,
+                f"{expect_cat}={expect_count} but got {cat_count[expect_cat]}",
+            )
+
+    def test_not_patch_subject(self):
+        """An email with subject not matching the patch pattern"""
+        # Setup
+        classifier = SimpleClassifier()
+        messages = self.get_messages("tests/data/not_a_patch.mbox", classifier)
+
+        self.assertEqual(len(messages), 2)
+        cat_count = defaultdict(int)
+
+        # Execute
+        for m in messages:
+            category = classifier.get_category(m)
+            cat_count[category] += 1
+
+        # Assert
+        expect = {
+            Category.NotPatch: 2,
+            Category.PatchCoverLetter: 0,
+            Category.PatchN: 0,
+            Category.PatchAck: 0,
+            Category.PatchNak: 0,
+            Category.PatchApplied: 0,
+        }
+        for expect_cat, expect_count in expect.items():
+            self.assertEqual(
+                cat_count[expect_cat],
+                expect_count,
+                f"{expect_cat}={expect_count} but got {cat_count[expect_cat]}",
+            )
+
+    def test_get_affected_kernels(self):
+        "Reminder to test get_affected_kernels once implemented"
+        # Setup
+        classifier = SimpleClassifier()
+        messages = self.get_messages("tests/data/applied.mbox", classifier)
+        # Assert
+        with self.assertRaises(NotImplementedError):
+            _ = classifier.get_affected_kernels(messages[0])
