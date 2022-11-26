@@ -1,0 +1,68 @@
+From jianhui.lee at canonical.com  Mon Sep  5 07:16:15 2022
+From: jianhui.lee at canonical.com (Jian Hui Lee)
+Date: Mon,  5 Sep 2022 15:16:15 +0800
+Subject: [kernel-snaps-uc20:intel][PATCH] intel: repack intel-kernel snap from
+ intel-iotg-kernel snap
+Message-ID: <20220905071615.523877-1-jianhui.lee@canonical.com>
+
+This patch rewrites intel-kernel snapcraft.yaml packaging to repack from intel-iotg-kernel snap by using stag-snaps.
+
+Signed-off-by: Jian Hui Lee <jianhui.lee at canonical.com>
+---
+ kernel-info.yaml |  2 +-
+ snapcraft.yaml   | 26 +++++++++++---------------
+ 2 files changed, 12 insertions(+), 16 deletions(-)
+
+diff --git a/kernel-info.yaml b/kernel-info.yaml
+index 986c92c..acaad8c 100644
+--- a/kernel-info.yaml
++++ b/kernel-info.yaml
+@@ -2,5 +2,5 @@
+ # Kernel Source Information
+ #
+ series: focal
+-source: linux-uc20-intel
++source: linux-uc20-intel-iotg
+ version: 5.13.0-1017.19.1
+diff --git a/snapcraft.yaml b/snapcraft.yaml
+index 9a2b636..1b03d8b 100644
+--- a/snapcraft.yaml
++++ b/snapcraft.yaml
+@@ -1,24 +1,20 @@
+ name: intel-kernel
+-version: 5.13.0-1017.19.1
++adopt-info: kernel
+ summary: generic linux kernel
+ description: The Intel Ubuntu kernel package as a snap
+ type: kernel
++grade: stable
+ confinement: strict
+ build-base: core20
+ 
+ parts:
+   kernel:
+-    source: git://git.launchpad.net/~canonical-kernel-snaps/+git/kernel-snaps-uc20
+-    source-type: git
+-    source-branch: master
+-    plugin: make
+-    make-parameters:
+-      - KERNEL_SOURCE=focal:linux-uc20-intel
+-      - KERNEL=linux-image-uc20-intel
+-      - KERNEL_IMAGE_FORMAT=efi
+-      - PROPOSED=true
+-    build-packages:
+-      - debootstrap
+-      - gnupg
+-      - kmod
+-      - lsb-release
++    plugin: nil
++    # Set this snap version to the meta version of kernel.efi
++    override-pull: |
++      snapcraftctl pull
++      snapcraftctl set-version "$(snap info intel-iotg-kernel | yq '.channels.20/stable | split(" ").0')"
++    build-snaps:
++      - yq
++    stage-snaps:
++      - intel-iotg-kernel/20/stable
+-- 
+2.34.1

@@ -18,7 +18,7 @@ class PatchSet:
 
     @staticmethod
     def filter_thread(thread: List[Message], categories: Category) -> List[Message]:
-        """Use classifier to filter thread and return sorted result containing only elements of specified category"""
+        """Return sorted result containing only elements of specified category"""
         matches = filter(
             lambda m: m.category in categories,
             thread,
@@ -30,6 +30,16 @@ class PatchSet:
     def all_messages(self):
         """Returns all messages from the thread for this patch set"""
         return self.thread
+
+    @cached_property
+    def not_patches(self) -> List[Message]:
+        """All non-patch responses for this patch set in chronological order"""
+        return self.filter_thread(self.thread, Category.NotPatch)
+
+    @cached_property
+    def cover_letters(self) -> List[Message]:
+        """All non-patch responses for this patch set in chronological order"""
+        return self.filter_thread(self.thread, Category.PatchCoverLetter)
 
     @cached_property
     def epoch_patch(self) -> Optional[Message]:
@@ -47,9 +57,7 @@ class PatchSet:
     @cached_property
     def patches(self) -> List[Message]:
         """All patches in this thread in chronological order"""
-        patches = self.filter_thread(
-            self.thread, Category.PatchCoverLetter | Category.PatchN
-        )
+        patches = self.filter_thread(self.thread, Category.PatchN)
         return sorted(patches)
 
     @cached_property
@@ -64,12 +72,18 @@ class PatchSet:
 
     @cached_property
     def applieds(self) -> List[Message]:
-        """All APPLIED responses for this patch set in chronological ordser"""
+        """All APPLIED responses for this patch set in chronological order"""
         return self.filter_thread(self.thread, Category.PatchApplied)
 
     def count_of(self, category: Category):
         """Returns the count of replies for this category"""
         count = 0
+        if Category.NotPatch in category:
+            count += len(self.not_patches)
+        if Category.PatchCoverLetter in category:
+            count += len(self.cover_letters)
+        if Category.PatchN in category:
+            count += len(self.patches)
         if Category.PatchAck in category:
             count += len(self.acks)
         if Category.PatchNak in category:
@@ -85,3 +99,7 @@ class PatchSet:
     def __gt__(self, other):
         """Sort by natural ordering of message"""
         return self.epoch_patch > other.epoch_patch
+
+    def __len__(self):
+        """Returns count of messagse in entire thread"""
+        return len(self.thread)

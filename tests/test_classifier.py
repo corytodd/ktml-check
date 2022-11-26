@@ -1,19 +1,7 @@
-import os
-import unittest
 from collections import defaultdict
 
 from ml_check.classifier import Category, SimpleClassifier
-from ml_check.kteam_mbox import KTeamMbox
-
-
-class BaseTest(unittest.TestCase):
-    def get_messages(self, mbox_path, classifier):
-        """Returns messages from mbox file"""
-        self.assertTrue(os.path.exists(mbox_path))
-        messages = []
-        for message in KTeamMbox.read_messages(mbox_path, classifier):
-            messages.append(message)
-        return messages
+from tests.base_test import BaseTest
 
 
 class TestClassifier(BaseTest):

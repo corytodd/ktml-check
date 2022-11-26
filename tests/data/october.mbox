@@ -1,0 +1,48 @@
+From kernel-team-bot at canonical.com  Mon Oct  3 15:26:06 2022
+From: kernel-team-bot at canonical.com (kernel-team-bot at canonical.com)
+Date: Mon, 03 Oct 2022 15:26:06 -0000
+Subject: [focal] linux-gke 5.4.0-1084.90 uploaded (ABI bump)
+Message-ID: <mailman.214.1664810768.13205.kernel-team@lists.ubuntu.com>
+
+A new focal kernel has been uploaded into proposed. Note the ABI bump. 
+The full changelog about all bug fixes contained in this upload can be found at:
+
+https://launchpad.net/ubuntu/focal/+source/linux-gke/5.4.0-1084.90
+
+-- 
+This message was created by an automated script, maintained by the
+Ubuntu Kernel Team.
+
+
+From cengiz.can at canonical.com  Mon Oct  3 15:31:16 2022
+From: cengiz.can at canonical.com (Cengiz Can)
+Date: Mon,  3 Oct 2022 18:31:16 +0300
+Subject: [SRU Bionic/Focal/OEM-5.14/Jammy/HWE-5.17/Kinetic 0/1] CVE-2022-40768
+Message-ID: <20221003153116.135309-1-cengiz.can@canonical.com>
+
+[Impact]
+drivers/scsi/stex.c in the Linux kernel through 5.19.9 allows local
+users to obtain sensitive information from kernel memory because
+stex_queuecommand_lck lacks a memset for the PASSTHRU_CMD case.
+
+[Fix]
+Fix is currently on linux-next.git only. There's a request to convert
+it into two separate patches which won't effect the structure of the
+fix.
+
+[Test case]
+For each target kernel, compile and boot tested on KVM only.
+
+[Potential regression]
+stex driver specific changes are harmless but the added const'ness to
+scsi_sg_copy_from_buffer signature might be risky.
+
+Linus Torvalds (1):
+  scsi: stex: Properly zero out the passthrough command structure
+
+ drivers/scsi/stex.c      | 17 +++++++++--------
+ include/scsi/scsi_cmnd.h |  2 +-
+ 2 files changed, 10 insertions(+), 9 deletions(-)
+
+-- 
+2.34.1
