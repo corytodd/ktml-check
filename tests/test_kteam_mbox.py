@@ -1,7 +1,12 @@
+import glob
+import os
 import unittest
 from datetime import datetime, timezone
+from tempfile import TemporaryDirectory
+from unittest import mock
 
-from ml_check.kteam_mbox import datetime_min_tz, periodic_mail_steps
+from ml_check.classifier import SimpleClassifier
+from ml_check.kteam_mbox import KTeamMbox, datetime_min_tz, periodic_mail_steps
 
 
 class TestKteamMbox(unittest.TestCase):
@@ -40,3 +45,18 @@ class TestKteamMbox(unittest.TestCase):
         # Assert - no steps have year not in (2016, 2017)
         self.assertTrue(all([m[0] in (2016, 2017) for m in mail_steps]))
         self.assertTrue(all([0 < m[1] <= 12 for m in mail_steps]))
+
+    def test_clear_cache(self):
+        """Ensure that the cache directory is wiped"""
+        # Setup
+        with TemporaryDirectory() as temp:
+            with mock.patch.dict(os.environ, {"ML_CHECK_CACHE_DIR": temp}):
+                classifier = SimpleClassifier()
+                kteam = KTeamMbox(classifier)
+
+                # Execute
+                kteam.clear_cache()
+
+                # Assert
+                in_cache = glob.glob(f"{temp}/*")
+                self.assertEqual(len(in_cache), 0)

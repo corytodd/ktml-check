@@ -130,17 +130,18 @@ class KTeamMbox:
 
     def __init__(self, classifier):
         self.classifier = classifier
-        self.cache_dir = os.path.expanduser(config.CACHE_DIRECTORY)
+        cache_dir = os.getenv("ML_CHECK_CACHE_DIR", config.CACHE_DIRECTORY)
+        self.cache_dir = os.path.expanduser(cache_dir)
         if not os.path.exists(self.cache_dir):
             os.mkdir(self.cache_dir)
+        with open(os.path.join(self.cache_dir, "last_run"), "w") as f:
+            f.write(f"{datetime.now()}")
 
     def clear_cache(self):
         """Deletes local cache file is present"""
-        pattern = os.path.join(self.cache_dir, "*.mail_cache")
+        pattern = os.path.join(self.cache_dir, "*")
         for file in glob.glob(pattern):
             os.remove(file)
-        if os.path.exists(config.STABLE_MBOX):
-            os.remove(config.STABLE_MBOX)
 
     def fetch_mail(self, since=None, clear_cache=False):
         """Download mail archives from remote server

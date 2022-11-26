@@ -24,3 +24,7 @@ the path to each patch in order.
 ## Usage
 
     ml-check.py [-h] [-d DAYS_BACK] [--clear-cache] [-p PATCH_OUTPUT] [--all] [--naks] [--applied] [--acks ACKS] [-v]
+
+## Env
+
+    ML_CHECK_CACHE_DIR direct cache directory to this location
