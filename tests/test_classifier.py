@@ -9,7 +9,7 @@ class TestClassifier(BaseTest):
         """An email thread with a single thread of replies and 1 nak"""
         # Setup
         classifier = SimpleClassifier()
-        messages = self.get_messages("tests/data/single_nak.mbox", classifier)
+        messages = self.get_messages("tests/data/single_nak.mbox")
 
         self.assertEqual(len(messages), 4)
         cat_count = defaultdict(int)
@@ -39,7 +39,7 @@ class TestClassifier(BaseTest):
         """An email thread with a single thread of replies and 1 ack"""
         # Setup
         classifier = SimpleClassifier()
-        messages = self.get_messages("tests/data/single_ack.mbox", classifier)
+        messages = self.get_messages("tests/data/single_ack.mbox")
 
         self.assertEqual(len(messages), 6)
         cat_count = defaultdict(int)
@@ -69,7 +69,7 @@ class TestClassifier(BaseTest):
         """An email thread with two acks and an applied"""
         # Setup
         classifier = SimpleClassifier()
-        messages = self.get_messages("tests/data/applied.mbox", classifier)
+        messages = self.get_messages("tests/data/applied.mbox")
         self.assertEqual(len(messages), 4)
         cat_count = defaultdict(int)
 
@@ -98,7 +98,7 @@ class TestClassifier(BaseTest):
         """An email with subject not matching the patch pattern"""
         # Setup
         classifier = SimpleClassifier()
-        messages = self.get_messages("tests/data/not_a_patch.mbox", classifier)
+        messages = self.get_messages("tests/data/not_a_patch.mbox")
 
         self.assertEqual(len(messages), 2)
         cat_count = defaultdict(int)
@@ -132,9 +132,7 @@ class TestClassifier(BaseTest):
         """
         # Setup
         classifier = SimpleClassifier()
-        messages = self.get_messages(
-            "tests/data/reply_without_re_prefix.mbox", classifier
-        )
+        messages = self.get_messages("tests/data/reply_without_re_prefix.mbox")
 
         self.assertEqual(len(messages), 8)
         cat_count = defaultdict(int)
@@ -164,7 +162,7 @@ class TestClassifier(BaseTest):
         "Reminder to test get_affected_kernels once implemented"
         # Setup
         classifier = SimpleClassifier()
-        messages = self.get_messages("tests/data/applied.mbox", classifier)
+        messages = self.get_messages("tests/data/applied.mbox")
         # Assert
         with self.assertRaises(NotImplementedError):
             _ = classifier.get_affected_kernels(messages[0])

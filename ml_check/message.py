@@ -125,7 +125,7 @@ class Message:
         self.timestamp = timestamp
         self.body = body
         self.sender = sender
-        self.category = category
+        self.__category = category
 
     @property
     def thread_url(self):
@@ -134,7 +134,7 @@ class Message:
         return config.THREAD_URL.format(year=year, month=month_name)
 
     @staticmethod
-    def from_mail(mail, classifier: MessageClassifier):
+    def from_mail(mail):
         """Create a message from a mailbox.mboxMessage"""
         message_id = mail.get("Message-Id")
         in_reply_to = mail.get("In-Reply-To")
@@ -156,9 +156,8 @@ class Message:
                 timestamp=timestamp,
                 body=body,
                 sender=sender,
-                category=0,
+                category=Category.NotPatch,
             )
-            message.classify(classifier)
         else:
             # Show some details about the message including a truncated body
             logger.debug(
@@ -202,10 +201,13 @@ Message-Id: {message_id}
         """Machine readable summary in YYYY.DD URL subject format"""
         return f"[{self.timestamp.year}.{self.timestamp.month:02d}] {self.thread_url} {self.subject}"
 
-    def classify(self, classifier):
-        """Classify and store category using this classifier"""
-        self.category = classifier.get_category(self)
-        return self.category
+    @property
+    def category(self):
+        return self.__category
+
+    @category.setter
+    def category(self, value):
+        self.__category = value
 
     def clone_with(self, **kwargs):
         """Create a clone of this message replacing any fields present in kwargs"""
@@ -217,7 +219,7 @@ Message-Id: {message_id}
             timestamp=kwargs.get("timestamp", self.timestamp),
             body=kwargs.get("body", self.body),
             sender=kwargs.get("sender", self.sender),
-            category=kwargs.get("category", self.category),
+            category=kwargs.get("category", self.__category),
         )
 
     def __hash__(self):

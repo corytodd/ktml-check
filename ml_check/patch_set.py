@@ -14,8 +14,9 @@ from ml_check.message import Message
 class PatchSet:
     """One or more patches with their associated mailing list responses"""
 
-    def __init__(self, thread: List[Message]):
+    def __init__(self, thread: List[Message], classifier: MessageClassifier):
         self.thread = thread
+        self.__reclassify(classifier)
 
     @staticmethod
     def filter_thread(thread: List[Message], categories: Category) -> List[Message]:
@@ -93,13 +94,19 @@ class PatchSet:
             count += len(self.applieds)
         return count
 
-    def reclassify(self, classifier: MessageClassifier) -> PatchSet:
-        """Reclassify all messages into a new PatchSet"""
+    def __reclassify(self, classifier: MessageClassifier) -> PatchSet:
+        """Reclassify (mutate) all messages"""
+
+        #
+        # First pass for local classification
+        for m in self.all_messages:
+            m.category = classifier.get_category(m)
+
         #
         # Without a root message we can't do anything useful
         epoch = self.epoch_patch
         if not epoch:
-            return PatchSet(self.all_messages)
+            return
 
         # NotPatches can be trusted
         # We are enforcing that all non-patches
@@ -118,15 +125,14 @@ class PatchSet:
         # | ACK
         # | NAK
         # | APPLIED
-        messages = []
         for message in self.all_messages:
             new_category = message.category
             # Do not modify the epoch, skip
             if message == epoch:
                 pass
-            # NotPatch will not get promoted to anything, skip
+            # NotPatch, re-check to make sure this is still accurate
             elif message.category == Category.NotPatch:
-                pass
+                new_category = classifier.get_category(message)
             # A cover letter should always be the epoch, error
             elif message.category == Category.PatchCoverLetter:
                 raise RuntimeError("CoverLetter is not epoch?!")
@@ -157,10 +163,7 @@ class PatchSet:
                     ):
                         new_category = Category.NotPatch
 
-            messages.append(message.clone_with(category=new_category))
-
-        result = PatchSet(messages)
-        return result
+            message.category = new_category
 
     def __lt__(self, other):
         """Sort by natural ordering of message"""

@@ -18,7 +18,7 @@ import networkx as nx
 import requests
 
 from ml_check import config
-from ml_check.classifier import Category, MessageClassifier
+from ml_check.classifier import Category
 from ml_check.logging import logger
 from ml_check.message import Message
 from ml_check.patch_set import PatchSet
@@ -219,12 +219,12 @@ class KTeamMbox:
         """Returns a list of patches and their email threads that are
         suspected of needing additional review.
         """
-        for thread in self.all_threads():
-            patch_set = PatchSet(thread)
+        for thread in self.__all_threads():
+            patch_set = PatchSet(thread, self.classifier)
             if patch_filter(patch_set):
                 yield patch_set
 
-    def all_threads(self):
+    def __all_threads(self):
         """Returns all messagse from mailbox in thread form
         :return: list(Message) in chronological order
         """
@@ -234,7 +234,7 @@ class KTeamMbox:
         message_map = {}
         with self.__build_active_mbox() as mbox:
             for mail in mbox:
-                message = Message.from_mail(mail, self.classifier)
+                message = Message.from_mail(mail)
                 if message is None:
                     continue
                 message_map[message.message_id] = message
@@ -259,10 +259,13 @@ class KTeamMbox:
             yield sorted(messages)
 
     @staticmethod
-    def read_messages(mbox_path, classifier: MessageClassifier):
+    def read_messages(mbox_path, classifier=None):
         """Helper for reading messages from an mbox file.
-        Malformed messages may be returned as None
+        Malformed messages may be returned as None.
         """
         with safe_mbox(mbox_path) as mbox:
             for mail in mbox:
-                yield Message.from_mail(mail, classifier)
+                message = Message.from_mail(mail)
+                if classifier:
+                    message.category = classifier.get_category(message)
+                yield message

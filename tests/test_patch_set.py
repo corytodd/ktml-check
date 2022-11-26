@@ -8,10 +8,10 @@ class TestPatchSet(BaseTest):
         """A patchset can technically be empty"""
         # Setup
         classifier = SimpleClassifier()
-        messages = self.get_messages("tests/data/empty.mbox", classifier)
+        messages = self.get_messages("tests/data/empty.mbox")
 
         # Execute
-        patch_set = PatchSet(messages)
+        patch_set = PatchSet(messages, classifier)
 
         # Assert
         self.assertEqual(len(patch_set), 0)
@@ -20,10 +20,10 @@ class TestPatchSet(BaseTest):
         """Test that all messagse are stored and length (message count) is accurate"""
         # Setup
         classifier = SimpleClassifier()
-        messages = self.get_messages("tests/data/applied.mbox", classifier)
+        messages = self.get_messages("tests/data/applied.mbox")
 
         # Execute
-        patch_set = PatchSet(messages)
+        patch_set = PatchSet(messages, classifier)
 
         # Assert
         self.assertEqual(len(patch_set.all_messages), len(messages))
@@ -33,10 +33,10 @@ class TestPatchSet(BaseTest):
         """Test a nominal case: 2 acks 1 applied"""
         # Setup
         classifier = SimpleClassifier()
-        messages = self.get_messages("tests/data/applied.mbox", classifier)
+        messages = self.get_messages("tests/data/applied.mbox")
 
         # Execute
-        patch_set = PatchSet(messages)
+        patch_set = PatchSet(messages, classifier)
 
         # Assert
         expect = {
@@ -57,8 +57,8 @@ class TestPatchSet(BaseTest):
         """Test a nominal case for epoch detection"""
         # Setup
         classifier = SimpleClassifier()
-        messages = self.get_messages("tests/data/single_ack.mbox", classifier)
-        patch_set = PatchSet(messages)
+        messages = self.get_messages("tests/data/single_ack.mbox")
+        patch_set = PatchSet(messages, classifier)
 
         # Execute
         epoch = patch_set.epoch_patch
@@ -73,8 +73,8 @@ class TestPatchSet(BaseTest):
         """Test a non-coverletter case for epoch detection"""
         # Setup
         classifier = SimpleClassifier()
-        messages = self.get_messages("tests/data/no_cover_letter.mbox", classifier)
-        patch_set = PatchSet(messages)
+        messages = self.get_messages("tests/data/no_cover_letter.mbox")
+        patch_set = PatchSet(messages, classifier)
 
         # Execute
         epoch = patch_set.epoch_patch
@@ -86,12 +86,12 @@ class TestPatchSet(BaseTest):
         """Test that two patch sets can be sorted"""
         # Setup
         classifier = SimpleClassifier()
-        september = self.get_messages("tests/data/no_cover_letter.mbox", classifier)
-        october = self.get_messages("tests/data/october.mbox", classifier)
-        november = self.get_messages("tests/data/applied.mbox", classifier)
-        september = PatchSet(september)
-        october = PatchSet(october)
-        november = PatchSet(november)
+        september = self.get_messages("tests/data/no_cover_letter.mbox")
+        october = self.get_messages("tests/data/october.mbox")
+        november = self.get_messages("tests/data/applied.mbox")
+        september = PatchSet(september, classifier)
+        october = PatchSet(october, classifier)
+        november = PatchSet(november, classifier)
 
         # Assert
         self.assertLess(september, october)
@@ -107,13 +107,10 @@ class TestPatchSet(BaseTest):
         """
         # Setup
         classifier = SimpleClassifier()
-        messages = self.get_messages(
-            "tests/data/reply_without_re_prefix.mbox", classifier
-        )
-        patch_set = PatchSet(messages)
+        messages = self.get_messages("tests/data/reply_without_re_prefix.mbox")
 
         # Execute
-        patch_set = patch_set.reclassify(classifier)
+        patch_set = PatchSet(messages, classifier)
 
         # Assert
         expect = {
