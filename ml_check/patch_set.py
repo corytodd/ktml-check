@@ -133,9 +133,9 @@ class PatchSet:
             # NotPatch, re-check to make sure this is still accurate
             elif message.category == Category.NotPatch:
                 new_category = classifier.get_category(message)
-            # A cover letter should always be the epoch, error
+            # Assume cover letter is correct
             elif message.category == Category.PatchCoverLetter:
-                raise RuntimeError("CoverLetter is not epoch?!")
+                pass
             # A patch should only ever be in response to the epoch
             elif message.category == Category.PatchN:
                 if message.in_reply_to and message.in_reply_to != epoch.message_id:
