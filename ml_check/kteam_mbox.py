@@ -206,14 +206,18 @@ class KTeamMbox:
         )
 
         # Active mailbox will be the stable mail + the current month's mail
-        active_mbox = mailbox.mbox(active_mbox_path)
-        with safe_mbox(cache_file) as cached_mbox:
-            for mail in cached_mbox:
-                active_mbox.add(mail)
+        active_mbox = None
+        try:
+            active_mbox = mailbox.mbox(active_mbox_path)
+            with safe_mbox(cache_file) as cached_mbox:
+                for mail in cached_mbox:
+                    active_mbox.add(mail)
 
-        active_mbox.flush()
-        yield active_mbox
-        active_mbox.close()
+            active_mbox.flush()
+            yield active_mbox
+        finally:
+            if active_mbox:
+                active_mbox.close()
 
     def filter_patches(self, patch_filter: PatchFilter = DefaultPatchFilter):
         """Returns a list of patches and their email threads that are
