@@ -23,6 +23,7 @@ except ModuleNotFoundError:
         "pip install -r requirements.txt"
     )
 
+# Subject line pattern patch for patches
 RE_PATCH = re.compile(
     r"\[?(patch|sru|ubuntu|pull)",
     re.IGNORECASE,
@@ -132,7 +133,6 @@ class SimpleClassifier(MessageClassifier):
         return is_patch
 
     def __is_git_send_email(self, message):
-        # Soft check the message id for git-send-email
         return "git-send-email" in message.message_id
 
     def __subject_looks_like_patch(self, message):

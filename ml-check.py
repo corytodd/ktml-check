@@ -79,9 +79,9 @@ def save_patch_set(out_directory, patch_set):
 def main(days_back, patch_output, reply_type, reply_count, clear_cache):
     """Run mailing list checker
     :param days_back: int how many days back from today to scan
+    :param patch_output: str if specified, emit .patches to this directory
     :param reply_type: str which types of replies to dump
     :param reply_count: int if reply_type == "ack" dump patches with this many of that type
-    :param patch_output: str if specified, emit .patches to this directory
     :param clear_cache: bool delete local cache (will force download all new mail)
     """
     since = datetime.now(tz=timezone.utc) - timedelta(days=days_back)
@@ -90,16 +90,15 @@ def main(days_back, patch_output, reply_type, reply_count, clear_cache):
     kteam = KTeamMbox(classifier)
     kteam.fetch_mail(since, clear_cache)
 
+    # Ensure patch output directory exists and is clean
     if patch_output:
-        # Ensure patch output directory exists and is clean
         patch_output = os.path.expanduser(patch_output)
         if os.path.exists(patch_output):
             shutil.rmtree(patch_output)
         os.mkdir(patch_output)
 
+    # Write filtered patches to disk
     patch_filter = CustomPatchFilter(reply_type, reply_count, after=since)
-
-    # Prints from oldest to newest
     patch_sets = kteam.filter_patches(patch_filter.apply)
     for patch_set in sorted(patch_sets):
         if patch_output:

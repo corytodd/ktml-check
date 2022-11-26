@@ -1,18 +1,19 @@
 # ml-check
 
-Check the kernel-team mailing list for patches that need some lovin' or scoldin'.
+Check the kernel-team mailing list for patches that need review.
 
 Everyone has their own way of monitoring the mailing list. The goal of this tool 
 is to provide a solution that works independently of any particular MUA. 
 
-This tool pulls patches from kernel-team mailing list and writes them as patch sets
-to your local directory. The patches are valid can be directly applied to your 
-target git tree. There are still some rough edges when dealing with replies and 
-certain types of cover letters.
+This tool pulls patches from the kernel-team mailing list and writes them as patch sets
+to your local directory. The patches are well-formed and can be directly applied to your 
+target git tree. There are still some rough edges when dealing with replies and certain 
+types of cover letters.
 
-By default, we look for any patch that needs acks and has not been nak'd or applied. For each patchset, a folder matching the name of the first
-patch is created and all patches will be dumped here. Also included is a 
-file called series which enumerates the path to each patch in order.
+By default, we look for any patch that needs acks and has not been nak'd or applied. 
+For each patchset, a folder matching the name of the first patch is created and all 
+patches will be dumped here. Also included is a file called series which enumerates 
+the path to each patch in order.
 
 ## Setup
 

@@ -25,7 +25,7 @@ from ml_check.patch_set import PatchSet
 
 
 def datetime_min_tz(tz):
-    """Workaround datetime.min not having a timezone"""
+    """Work around datetime.min not having a timezone"""
     result = datetime.min
     result = result.replace(tzinfo=tz)
     return result
@@ -126,6 +126,8 @@ def safe_mbox(mbox_path):
 
 
 class KTeamMbox:
+    """Remote mbox utilitiy"""
+
     def __init__(self, classifier):
         self.classifier = classifier
         self.cache_dir = os.path.expanduser(config.CACHE_DIRECTORY)
@@ -249,6 +251,8 @@ class KTeamMbox:
                 if ref in message_map:
                     threads.add_edge(message, message_map[ref])
 
+        # Each thread connects a set of connected components.
+        # Emails outside of a thread will not be connected.
         for thread in nx.connected_components(threads):
             # Convert to list for deterministic ordering
             messages = [m for m in thread]
