@@ -97,3 +97,35 @@ class TestPatchSet(BaseTest):
         self.assertLess(september, october)
         self.assertLess(october, november)
         self.assertGreater(october, september)
+
+    def test_contextual_classify(self):
+        """Some messages, when viewed in the context of an entire thread, may have
+        a different category. For example, a reply that doesn't change the subject
+        or prepend RE: may falsely get categorized as the same type of message it
+        is in response to.
+        @see test_classifier.TestClassifier.test_reply_without_re_prefix
+        """
+        # Setup
+        classifier = SimpleClassifier()
+        messages = self.get_messages(
+            "tests/data/reply_without_re_prefix.mbox", classifier
+        )
+        patch_set = PatchSet(messages)
+
+        # Execute
+        patch_set = patch_set.reclassify(classifier)
+
+        # Assert
+        expect = {
+            Category.NotPatch: 1,
+            Category.PatchCoverLetter: 1,
+            Category.PatchN: 3,
+            Category.PatchAck: 2,
+            Category.PatchNak: 0,
+            Category.PatchApplied: 1,
+        }
+        for expect_cat, expect_count in expect.items():
+            actual = patch_set.count_of(expect_cat)
+            self.assertEqual(
+                actual, expect_count, f"{expect_cat}={expect_count} but got {actual}"
+            )

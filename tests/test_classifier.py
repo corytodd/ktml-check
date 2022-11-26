@@ -124,7 +124,7 @@ class TestClassifier(BaseTest):
                 f"{expect_cat}={expect_count} but got {cat_count[expect_cat]}",
             )
 
-    def test_reply_with_re_prefix(self):
+    def test_reply_without_re_prefix(self):
         """An patch series with 3 patches, 2 acks, 1 applied, and 1 reply
         This is actually the wrong answer but from a single message's perspective
         it is correct so we'll test for it. The only way to correctly classify this

@@ -2,11 +2,12 @@
 @file patch_set.py
 @brief Encapsulates a complete patch set including responses
 """
+from __future__ import annotations
 
 from functools import cached_property
 from typing import List, Optional
 
-from ml_check.classifier import Category
+from ml_check.classifier import Category, MessageClassifier
 from ml_check.message import Message
 
 
@@ -91,6 +92,75 @@ class PatchSet:
         if Category.PatchApplied in category:
             count += len(self.applieds)
         return count
+
+    def reclassify(self, classifier: MessageClassifier) -> PatchSet:
+        """Reclassify all messages into a new PatchSet"""
+        #
+        # Without a root message we can't do anything useful
+        epoch = self.epoch_patch
+        if not epoch:
+            return PatchSet(self.all_messages)
+
+        # NotPatches can be trusted
+        # We are enforcing that all non-patches
+        # can at most be 1 reply away from epoch
+        # Everything else is a NotPatch
+        # CoverLetter/Epoch
+        # | Patch 1
+        #   | ACK
+        #     | NotPatch
+        # | Patch 2
+        #   | Nak
+        #     | NotPatch
+        # | Patch N
+        #   | APPLIED
+        #     | NotPatch
+        # | ACK
+        # | NAK
+        # | APPLIED
+        messages = []
+        for message in self.all_messages:
+            new_category = message.category
+            # Do not modify the epoch, skip
+            if message == epoch:
+                pass
+            # NotPatch will not get promoted to anything, skip
+            elif message.category == Category.NotPatch:
+                pass
+            # A cover letter should always be the epoch, error
+            elif message.category == Category.PatchCoverLetter:
+                raise RuntimeError("CoverLetter is not epoch?!")
+            # A patch should only ever be in response to the epoch
+            elif message.category == Category.PatchN:
+                if message.in_reply_to and message.in_reply_to != epoch.message_id:
+                    new_category = Category.NotPatch
+            # The message being reviewed must be a patch
+            elif message.category in (
+                Category.PatchAck,
+                Category.PatchNak,
+                Category.PatchApplied,
+            ):
+                if message.in_reply_to:
+                    in_reply_to = next(
+                        iter(
+                            [
+                                m
+                                for m in self.all_messages
+                                if m.message_id == message.in_reply_to
+                            ]
+                        ),
+                        None,
+                    )
+                    if in_reply_to and in_reply_to.category not in (
+                        Category.PatchCoverLetter,
+                        Category.PatchN,
+                    ):
+                        new_category = Category.NotPatch
+
+            messages.append(message.clone_with(category=new_category))
+
+        result = PatchSet(messages)
+        return result
 
     def __lt__(self, other):
         """Sort by natural ordering of message"""
