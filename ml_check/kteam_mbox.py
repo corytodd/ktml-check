@@ -16,6 +16,7 @@ from typing import Optional
 
 import networkx as nx
 import requests
+from dateutil.relativedelta import relativedelta
 
 from ml_check import config
 from ml_check.classifier import Category
@@ -37,10 +38,12 @@ def periodic_mail_steps(start, end=datetime.utcnow()):
     :param end: datetime inclusive ending year and month
     :return: Iterable(int, int) where year is zero base and month is one base.
     """
-    for year in range(start.year, end.year + 1):
-        end_month = end.month + 1 if year == end.year else len(calendar.month_name)
-        for month in range(start.month, end_month):
-            yield (year, month)
+    start = datetime(start.year, start.month, start.day)
+    end = datetime(end.year, end.month, end.day)
+    current = start
+    while current <= end:
+        yield current.year, current.month
+        current += relativedelta(months=1)
 
 
 class ReplyTypes(Enum):

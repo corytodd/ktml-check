@@ -56,6 +56,9 @@ class TestKTeamMboxUtils(unittest.TestCase):
         self.assertTrue(all([m[0] in (2016, 2017) for m in mail_steps]))
         self.assertTrue(all([0 < m[1] <= 12 for m in mail_steps]))
 
+        # Assert - there must be exactly 14 elements
+        self.assertEqual(len(mail_steps), 14)
+
     def test_safe_mbox_clone(self):
         """Check that the mbox is actually closed"""
         with TemporaryDirectory() as temp:
