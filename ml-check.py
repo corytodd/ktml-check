@@ -33,7 +33,7 @@ from datetime import datetime, timedelta, timezone
 
 from ml_check import config
 from ml_check.classifier import Category, SimpleClassifier
-from ml_check.kteam_mbox import CustomPatchFilter, KTeamMbox, ReplyTypes
+from ml_check.kteam_mbox import KTeamMbox, PatchFilter, ReplyTypes
 from ml_check.logging import logger
 
 
@@ -98,8 +98,8 @@ def main(days_back, patch_output, reply_type, reply_count, clear_cache):
         os.mkdir(patch_output)
 
     # Write filtered patches to disk
-    patch_filter = CustomPatchFilter(reply_type, reply_count, after=since)
-    patch_sets = kteam.filter_patches(patch_filter.apply)
+    patch_filter = PatchFilter(reply_type, reply_count, after=since)
+    patch_sets = kteam.filter_patches(patch_filter)
     for patch_set in sorted(patch_sets):
         if patch_output:
             save_patch_set(patch_output, patch_set)

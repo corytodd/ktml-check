@@ -12,7 +12,7 @@ import shutil
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Protocol
+from typing import Optional
 
 import networkx as nx
 import requests
@@ -43,29 +43,25 @@ def periodic_mail_steps(start, end=datetime.utcnow()):
             yield (year, month)
 
 
-class PatchFilter(Protocol):
-    def __call__(self, patch_set: PatchSet) -> bool:
-        ...
-
-    """Filter accepts a patch set and return true if patch set should be returned
-    """
-
-
 class ReplyTypes(Enum):
-    Default = "default"
     Ack = "ack"
     Nak = "nak"
     Applied = "applied"
     All = "all"
 
 
-class CustomPatchFilter:
-    def __init__(self, reply_type: ReplyTypes, reply_count: int, after=None):
+class PatchFilter:
+    def __init__(
+        self,
+        reply_type: ReplyTypes = ReplyTypes.Ack,
+        reply_count: Optional[int] = 2,
+        after: Optional[datetime] = None,
+    ):
         self.after = datetime_min_tz(timezone.utc) if after is None else after
         self.reply_type = reply_type
         self.reply_count = reply_count
         logger.debug(
-            "CustomPatchFilter: reply_type=%s, reply_count=%s, after=%s",
+            "PatchFilter: reply_type=%s, reply_count=%s, after=%s",
             reply_type,
             reply_count,
             self.after,
@@ -77,40 +73,13 @@ class CustomPatchFilter:
             return False
         if patch_set.epoch_patch.timestamp < self.after:
             return False
-        if self.reply_type == ReplyTypes.Default:
-            return DefaultPatchFilter(patch_set)
         if self.reply_type == ReplyTypes.All:
             return True
         if self.reply_type == ReplyTypes.Ack:
             return patch_set.count_of(Category.PatchAck) == self.reply_count
         if self.reply_type == ReplyTypes.Nak:
             return patch_set.count_of(Category.PatchNak) > 0
-        if self.reply_type == ReplyTypes.Applied:
-            return patch_set.count_of(Category.PatchApplied) > 0
-        return True
-
-
-def DefaultPatchFilter(patch_set: PatchSet) -> bool:
-    """Default filter returns unapplied patches with no naks and less than 2 acks"""
-    accept = True
-
-    # We someone missed the epoch patch
-    if patch_set.epoch_patch is None:
-        accept = False
-
-    # Patch has been applied, skip it
-    elif any(patch_set.applieds):
-        accept = False
-
-    # Patch has been nak'd, skip it
-    elif any(patch_set.naks):
-        accept = False
-
-    # Patch has two or more ack's, skip it
-    elif len(patch_set.acks) >= 2:
-        accept = False
-
-    return accept
+        return patch_set.count_of(Category.PatchApplied) > 0
 
 
 @contextmanager
@@ -220,14 +189,14 @@ class KTeamMbox:
             if active_mbox:
                 active_mbox.close()
 
-    def filter_patches(self, patch_filter: PatchFilter = DefaultPatchFilter):
+    def filter_patches(self, patch_filter: PatchFilter):
         """Returns a list of patches and their email threads that are
         suspected of needing additional review. The returned PatchSets
         will be globally classified.
         """
         for thread in self.__all_threads():
             patch_set = PatchSet(thread, self.classifier)
-            if patch_filter(patch_set):
+            if patch_filter.apply(patch_set):
                 yield patch_set
 
     def __all_threads(self):
