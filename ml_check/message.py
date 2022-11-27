@@ -74,18 +74,6 @@ def parse_mail_references(raw):
     return references
 
 
-def periodic_mail_steps(start, end=datetime.utcnow()):
-    """Returns list of (year, month) tuples from starting datetime to ending datetime, inclusive
-    :param start: datetime inclusive start year and month
-    :param end: datetime inclusive ending year and month
-    :return: Iterable(int, int) where year is zero base and month is one base.
-    """
-    for year in range(start.year, end.year + 1):
-        end_month = end.month + 1 if year == end.year else len(calendar.month_name)
-        for month in range(start.month, end_month):
-            yield (year, month)
-
-
 def demangle_email(raw, strict_mode=False):
     """Mailman replaces user@example.com with user at example.com for all message fields. This function
     reverses that operation.
