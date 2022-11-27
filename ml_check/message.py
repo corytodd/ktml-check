@@ -91,6 +91,8 @@ def demangle_email(raw, strict_mode=False):
                 parts = m.groups()
                 if len(parts) >= 2:
                     result = "@".join(parts[:2])
+                if strict_mode:
+                    result = f"<{result}>"
             return result
 
         if strict_mode:
