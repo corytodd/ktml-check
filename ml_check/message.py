@@ -123,7 +123,7 @@ class Message:
         self.timestamp = timestamp
         self.body = body
         self.sender = sender
-        self.__category = category
+        self.category = category
 
     @property
     def thread_url(self):
@@ -197,17 +197,10 @@ Message-Id: {message_id}
             body=self.body,
         )
 
+    @property
     def short_summary(self):
         """Machine readable summary in YYYY.DD URL subject format"""
         return f"[{self.timestamp.year}.{self.timestamp.month:02d}] {self.thread_url} {self.subject}"
-
-    @property
-    def category(self):
-        return self.__category
-
-    @category.setter
-    def category(self, value):
-        self.__category = value
 
     def clone_with(self, **kwargs):
         """Create a clone of this message replacing any fields present in kwargs"""
@@ -219,7 +212,7 @@ Message-Id: {message_id}
             timestamp=kwargs.get("timestamp", self.timestamp),
             body=kwargs.get("body", self.body),
             sender=kwargs.get("sender", self.sender),
-            category=kwargs.get("category", self.__category),
+            category=kwargs.get("category", self.category),
         )
 
     def __hash__(self):
