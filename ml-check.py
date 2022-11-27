@@ -169,8 +169,8 @@ if __name__ == "__main__":
         print("WARNING: -w (--weeks-back) is deprecated use -d (--days) instead")
         days = 7 * args.weeks_back
 
-    reply_type = ReplyTypes.Default
-    reply_count = None
+    reply_type = ReplyTypes.Ack
+    reply_count = 1
     if args.all:
         reply_type = ReplyTypes.All
     elif args.acks is not None:
