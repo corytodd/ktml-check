@@ -112,21 +112,24 @@ class KTeamMbox:
         for file in glob.glob(pattern):
             os.remove(file)
 
-    def fetch_mail(self, since=None, clear_cache=False):
+    def fetch_mail(self, since=None, end=None, clear_cache=False):
         """Download mail archives from remote server
         :param since: datetime to search from for abandoned patches
+        :param end: datetime to search to for abandoned patches, defaults to utc now
         :param clear_cache: bool True to remove existing mail prior to fetching
         """
         now = datetime.utcnow()
         if since is None:
             since = now - timedelta(weeks=config.DEFAULT_DAYS_BACK)
+        if end is None:
+            end = now
 
         if clear_cache:
             self.clear_cache()
 
         stable_mbox_path = os.path.join(self.cache_dir, config.STABLE_MBOX)
         with safe_mbox(stable_mbox_path) as stable_mbox:
-            for year, month in periodic_mail_steps(since):
+            for year, month in periodic_mail_steps(since, end):
                 month_name = calendar.month_name[month]
                 cache_file = os.path.join(
                     self.cache_dir, config.MONTHLY_CACHE.format(year=year, month=month)

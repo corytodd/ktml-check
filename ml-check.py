@@ -88,7 +88,7 @@ def main(days_back, patch_output, reply_type, reply_count, clear_cache):
 
     classifier = SimpleClassifier()
     kteam = KTeamMbox(classifier)
-    kteam.fetch_mail(since, clear_cache)
+    kteam.fetch_mail(since, clear_cache=clear_cache)
 
     # Ensure patch output directory exists and is clean
     if patch_output:
