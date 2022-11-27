@@ -25,16 +25,36 @@ the file is generated.
 """
 
 import argparse
+import json
 import logging
 import os
 import shutil
 import sys
+from collections import Counter
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from statistics import median
+from typing import Tuple
 
 from ml_check import config
 from ml_check.classifier import Category, SimpleClassifier
 from ml_check.kteam_mbox import KTeamMbox, PatchFilter, ReplyTypes
 from ml_check.logging import logger
+
+
+@dataclass
+class Stats:
+    total_patches: int
+    total_applied: int
+    median_age_days: int
+    median_patches_in_patch: int
+    top_submitter: Tuple[str, int]
+    top_acker: Tuple[str, int]
+    top_naker: Tuple[str, int]
+    top_applier: Tuple[str, int]
+    median_days_to_first_ack: int
+    median_days_to_first_nak: int
+    median_days_to_applied: int
 
 
 def save_patch_set(out_directory, patch_set):
@@ -76,13 +96,80 @@ def save_patch_set(out_directory, patch_set):
         f.write(f"applied: {applied_count > 0}\n")
 
 
-def main(days_back, patch_output, reply_type, reply_count, clear_cache):
+def genererate_stats(patch_sets):
+    """Generate stats on patch_sets, return as dict"""
+    # Most stats require an epoch patch so filter this once
+    valid_patches = [p for p in patch_sets if p.epoch_patch]
+    if not valid_patches:
+        return None
+
+    now = datetime.utcnow()
+    now = now.replace(tzinfo=timezone.utc)
+
+    # Collect patch age based on submission date
+    submission_days_agos = [(now - p.epoch_patch.timestamp).days for p in patch_sets]
+    patches_per_patch_set = [len(p) for p in valid_patches]
+    applied_patch_sets = [p for p in valid_patches if p.applieds]
+
+    # Count up the most frequent sender for each category
+    top_submitters = Counter([p.epoch_patch.sender for p in valid_patches]).most_common(
+        1
+    )
+    top_ackers = Counter([a.sender for p in patch_sets for a in p.acks]).most_common(1)
+    top_nakers = Counter([a.sender for p in patch_sets for a in p.naks]).most_common(1)
+    top_appliers = Counter(
+        [a.sender for p in patch_sets for a in p.applieds]
+    ).most_common(1)
+
+    days_to_first_acks = []
+    days_to_first_naks = []
+    days_to_applieds = []
+    for p in patch_sets:
+        start = p.epoch_patch.timestamp
+        if p.acks:
+            end = p.acks[0].timestamp
+            delta_days = (end - start).days
+            days_to_first_acks.append(delta_days)
+        if p.naks:
+            end = p.naks[0].timestamp
+            delta_days = (end - start).days
+            days_to_first_naks.append(delta_days)
+        if p.applieds:
+            end = p.applieds[0].timestamp
+            delta_days = (end - start).days
+            days_to_applieds.append(delta_days)
+
+    # Ensure all days_xxx counters have one element so
+    # we can take the median
+    for days_counter in (days_to_first_acks, days_to_first_naks, days_to_applieds):
+        if not days_counter:
+            days_counter.append(0)
+
+    stats = Stats(
+        total_patches=len(valid_patches),
+        total_applied=len(applied_patch_sets),
+        median_age_days=median(submission_days_agos),
+        median_patches_in_patch=median(patches_per_patch_set),
+        top_submitter=next(iter(top_submitters), ("", 0)),
+        top_acker=next(iter(top_ackers), ("", 0)),
+        top_naker=next(iter(top_nakers), ("", 0)),
+        top_applier=next(iter(top_appliers), ("", 0)),
+        median_days_to_first_ack=median(days_to_first_acks),
+        median_days_to_first_nak=median(days_to_first_naks),
+        median_days_to_applied=median(days_to_applieds),
+    )
+
+    return stats.__dict__
+
+
+def main(days_back, patch_output, reply_type, reply_count, clear_cache, show_stats):
     """Run mailing list checker
     :param days_back: int how many days back from today to scan
     :param patch_output: str if specified, emit .patches to this directory
     :param reply_type: str which types of replies to dump
     :param reply_count: int if reply_type == "ack" dump patches with this many of that type
     :param clear_cache: bool delete local cache (will force download all new mail)
+    :param show_stats: bool print patch stats to stdout
     """
     since = datetime.now(tz=timezone.utc) - timedelta(days=days_back)
 
@@ -99,10 +186,15 @@ def main(days_back, patch_output, reply_type, reply_count, clear_cache):
 
     # Write filtered patches to disk
     patch_filter = PatchFilter(reply_type, reply_count, after=since)
-    patch_sets = kteam.filter_patches(patch_filter)
+    patch_sets = list(kteam.filter_patches(patch_filter))
     for patch_set in sorted(patch_sets):
         if patch_output:
             save_patch_set(patch_output, patch_set)
+
+    if show_stats:
+        stats = genererate_stats(patch_sets)
+        if stats:
+            print(json.dumps(stats, indent=4))
 
     return 0
 
@@ -155,6 +247,9 @@ if __name__ == "__main__":
         "--acks", type=int, default=None, help="Dump patches with this many ACKs"
     )
     parser.add_argument(
+        "-s", "--show-stats", action="store_true", help="Print stats to stdout"
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true", help="Print more debug information"
     )
     args = parser.parse_args()
@@ -189,6 +284,7 @@ if __name__ == "__main__":
             reply_type,
             reply_count,
             args.clear_cache,
+            args.show_stats,
         )
     except BaseException as ex:
         logger.exception(ex)
