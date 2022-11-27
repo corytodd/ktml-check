@@ -58,6 +58,15 @@ class TestMessageUtils(unittest.TestCase):
         ("a.c at b.com (a c)", False, "a.c@b.com"),
         ("a <a at b.com>", True, "a <a@b.com>"),
         ("a c <a.c at b.com>", True, "a c <a.c@b.com>"),
+        (
+            "Unrelated text\n\na c <a.c at b.com>",
+            True,
+            "Unrelated text\n\na c <a.c@b.com>",
+        ),
+        ("incomplete.loose", False, ""),
+        ("incomplete.strict", True, "incomplete.strict"),
+        ("this is loose\n\nmultiline", False, ""),
+        ("this is strict\n\nmultiline", True, "this is strict\n\nmultiline"),
     )
 
     def test_demangle_email(self):
