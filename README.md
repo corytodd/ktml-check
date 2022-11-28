@@ -28,3 +28,7 @@ the path to each patch in order.
 ## Env
 
     ML_CHECK_CACHE_DIR direct cache directory to this location
+
+## Credits
+
+@juergh for his ideas on writing patches to disk, command line options, and general feedback.
