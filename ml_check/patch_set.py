@@ -16,7 +16,7 @@ class PatchSet:
 
     def __init__(self, thread: List[Message], classifier: MessageClassifier):
         self.thread = thread
-        self.__reclassify(classifier)
+        self._reclassify(classifier)
 
     @staticmethod
     def filter_thread(thread: List[Message], categories: Category) -> List[Message]:
@@ -94,7 +94,7 @@ class PatchSet:
             count += len(self.applieds)
         return count
 
-    def __reclassify(self, classifier: MessageClassifier) -> PatchSet:
+    def _reclassify(self, classifier: MessageClassifier) -> PatchSet:
         """Reclassify (mutate) all messages"""
 
         #

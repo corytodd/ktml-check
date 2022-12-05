@@ -169,7 +169,7 @@ class KTeamMbox:
             logger.debug("stable mailbox has %s messages", len(stable_mbox.keys()))
 
     @contextmanager
-    def __build_active_mbox(self):
+    def _build_active_mbox(self):
         """Builds a new mbox based on the stable mbox, adding only mail from
         the current (active) year.month."""
         # Overwrite active mailbox so we can rebuild it
@@ -204,20 +204,20 @@ class KTeamMbox:
         suspected of needing additional review. The returned PatchSets
         will be globally classified.
         """
-        for thread in self.__all_threads():
+        for thread in self._all_threads():
             patch_set = PatchSet(thread, self.classifier)
             if patch_filter.apply(patch_set):
                 yield patch_set
 
-    def __all_threads(self):
-        """Returns all messagse from mailbox in thread form
+    def _all_threads(self):
+        """Returns all messages from mailbox in thread form
         :return: list(Message) in chronological order
         """
         # Unfortunately mbox is not associative so no matter how we slice it,
         # we need to make our own associative mapping of message_id<>messages.
         # Do this first so we can build our thread map during a second iteration.
         message_map = {}
-        with self.__build_active_mbox() as mbox:
+        with self._build_active_mbox() as mbox:
             for mail in mbox:
                 message = Message.from_mail(mail)
                 if message is None:

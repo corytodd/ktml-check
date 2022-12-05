@@ -70,8 +70,8 @@ class SimpleClassifier(MessageClassifier):
         if message.subject is None:
             return Category.NotPatch
 
-        is_cover_letter = self.__is_cover_letter(message)
-        is_patch = self.__is_patch(message)
+        is_cover_letter = self._is_cover_letter(message)
+        is_patch = self._is_patch(message)
         is_ack = message.subject.lower().startswith("ack")
         is_nak = (
             # Yup, NAC/NAK/NAC K seems to come in many flavors
@@ -93,7 +93,7 @@ class SimpleClassifier(MessageClassifier):
 
         return Category.NotPatch
 
-    def __is_cover_letter(self, message):
+    def _is_cover_letter(self, message):
         #
         # Cover letters are hard to detect. SRU patches at least have a
         # template with static bits we can look for. Of course these are
@@ -116,37 +116,37 @@ class SimpleClassifier(MessageClassifier):
 
         return is_cover_letter
 
-    def __is_patch(self, message):
+    def _is_patch(self, message):
         #
         # Skip subjects that do not conform
-        if not self.__subject_looks_like_patch(message):
+        if not self._subject_looks_like_patch(message):
             return False
 
         #
         # It would be weird to send a non-patch with git-send-email
-        is_git_send = self.__is_git_send_email(message)
+        is_git_send = self._is_git_send_email(message)
 
         #
         # Replies re-use the subject and don't always use the RE: prefix
         # Inspect the body for git-diffs. This will handle single patches.
-        is_content_patch = self.__contains_patch(message)
+        is_content_patch = self._contains_patch(message)
 
         #
         # This might be a cover letter which has all the attributes
         # but would be lacking an actual patch.
-        is_cover_leter = self.__is_cover_letter(message)
+        is_cover_leter = self._is_cover_letter(message)
 
         return any([is_git_send, is_content_patch, is_cover_leter])
 
-    def __is_git_send_email(self, message):
+    def _is_git_send_email(self, message):
         return "git-send-email" in message.message_id
 
-    def __subject_looks_like_patch(self, message):
+    def _subject_looks_like_patch(self, message):
         if not re.search(RE_PATCH, message.subject):
             return False
         return True
 
-    def __contains_patch(self, message):
+    def _contains_patch(self, message):
         #
         # Only messages with inline patches will be parsed
         try:
