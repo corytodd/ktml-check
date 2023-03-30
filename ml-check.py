@@ -96,7 +96,7 @@ def save_patch_set(out_directory, patch_set):
         f.write(f"applied: {applied_count > 0}\n")
 
 
-def genererate_stats(patch_sets):
+def generate_stats(patch_sets):
     """Generate stats on patch_sets, return as dict"""
     # Most stats require an epoch patch so filter this once
     valid_patches = [p for p in patch_sets if p.epoch_patch]
@@ -192,7 +192,7 @@ def main(days_back, patch_output, reply_type, reply_count, clear_cache, show_sta
             save_patch_set(patch_output, patch_set)
 
     if show_stats:
-        stats = genererate_stats(patch_sets)
+        stats = generate_stats(patch_sets)
         if stats:
             print(json.dumps(stats, indent=4))
 
