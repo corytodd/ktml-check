@@ -18,9 +18,6 @@ the path to each patch in order.
 ## Setup
 
     pip install -r requirements.txt
-
-    pre-commit install
-
 ## Usage
 
     ml-check [-h] [-d DAYS_BACK] [--clear-cache] [-p PATCH_OUTPUT] [--mode MODE] [--ubuntu-checkpatch-path PATH] [-v]
@@ -34,6 +31,12 @@ the path to each patch in order.
 You can use ubuntu-checkpatch directly from this tool. Tell ml-check where your copy of
 [ubuntu-checkpath](https://github.com/juergh/tools/blob/master/ubuntu-checkpatch) can be 
 found providing `--ubuntu-checkpatch-path`.
+
+## Development
+
+Setup pre-commit before you submit any fixes.
+
+    pre-commit install
 
 ## Credits
 

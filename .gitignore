@@ -2,3 +2,5 @@ venv/
 out/
 coverage/
 *.pyc
+*.egg-info/
+build/
