@@ -96,10 +96,14 @@ class PatchFilter:
     def _needs_acks(self, patch_set: PatchSet) -> bool:
         if patch_set.count_of(Category.PatchNak) > 0:
             return False
+        if patch_set.count_of(Category.PatchApplied) > 0:
+            return False
         return patch_set.count_of(Category.PatchAck) < self._required_acks
 
     def _ready_to_apply(self, patch_set: PatchSet) -> bool:
         if patch_set.count_of(Category.PatchNak) > 0:
+            return False
+        if patch_set.count_of(Category.PatchApplied) > 0:
             return False
         return patch_set.count_of(Category.PatchAck) >= self._required_acks
 
