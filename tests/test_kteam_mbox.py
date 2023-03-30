@@ -185,7 +185,7 @@ class TestPatchFilter(BaseTest):
         patch_set = PatchSet([], classifier)
 
         # Execute
-        keep = patch_filter.apply(patch_set)
+        keep = patch_filter.is_match(patch_set)
 
         # Assert
         self.assertFalse(keep)
@@ -200,7 +200,7 @@ class TestPatchFilter(BaseTest):
         patch_set = PatchSet(messages, classifier)
 
         # Execute
-        keep = patch_filter.apply(patch_set)
+        keep = patch_filter.is_match(patch_set)
 
         # Assert
         self.assertFalse(keep)
@@ -214,7 +214,7 @@ class TestPatchFilter(BaseTest):
         patch_set = PatchSet(messages, classifier)
 
         # Execute
-        keep = patch_filter.apply(patch_set)
+        keep = patch_filter.is_match(patch_set)
 
         # Assert
         self.assertTrue(keep)
@@ -230,8 +230,8 @@ class TestPatchFilter(BaseTest):
         should_reject_set = PatchSet(should_reject, classifier)
 
         # Execute
-        should_keep = patch_filter.apply(should_keep_set)
-        should_reject = patch_filter.apply(should_reject_set)
+        should_keep = patch_filter.is_match(should_keep_set)
+        should_reject = patch_filter.is_match(should_reject_set)
 
         # Assert
         self.assertTrue(should_keep)
@@ -248,8 +248,8 @@ class TestPatchFilter(BaseTest):
         should_reject_set = PatchSet(should_reject, classifier)
 
         # Execute
-        should_keep = patch_filter.apply(should_keep_set)
-        should_reject = patch_filter.apply(should_reject_set)
+        should_keep = patch_filter.is_match(should_keep_set)
+        should_reject = patch_filter.is_match(should_reject_set)
 
         # Assert
         self.assertTrue(should_keep)
@@ -266,8 +266,8 @@ class TestPatchFilter(BaseTest):
         should_reject_set = PatchSet(should_reject, classifier)
 
         # Execute
-        should_keep = patch_filter.apply(should_keep_set)
-        should_reject = patch_filter.apply(should_reject_set)
+        should_keep = patch_filter.is_match(should_keep_set)
+        should_reject = patch_filter.is_match(should_reject_set)
 
         # Assert
         self.assertTrue(should_keep)

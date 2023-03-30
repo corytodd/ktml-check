@@ -70,7 +70,7 @@ class PatchFilter:
             self.after,
         )
 
-    def apply(self, patch_set: PatchSet) -> bool:
+    def is_match(self, patch_set: PatchSet) -> bool:
         # ignore non-patches
         if patch_set.epoch_patch is None:
             return False
@@ -206,7 +206,7 @@ class KTeamMbox:
         """
         for thread in self._all_threads():
             patch_set = PatchSet(thread, self.classifier)
-            if patch_filter.apply(patch_set):
+            if patch_filter.is_match(patch_set):
                 yield patch_set
 
     def _all_threads(self):
