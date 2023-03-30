@@ -23,7 +23,7 @@ the path to each patch in order.
 
 ## Usage
 
-    ml-check.py [-h] [-d DAYS_BACK] [--clear-cache] [-p PATCH_OUTPUT] [--all] [--naks] [--applied] [--acks ACKS] [-v]
+    ml-check.py [-h] [-d DAYS_BACK] [--clear-cache] [-p PATCH_OUTPUT] [--mode MODE] [-v]
 
 ## Env
 
