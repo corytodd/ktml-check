@@ -8,9 +8,9 @@ from unittest import mock
 
 from ml_check.classifier import SimpleClassifier
 from ml_check.kteam_mbox import (
+    FilterMode,
     KTeamMbox,
     PatchFilter,
-    ReplyTypes,
     datetime_min_tz,
     periodic_mail_steps,
     safe_mbox,
@@ -181,7 +181,7 @@ class TestPatchFilter(BaseTest):
         """Empty patch sets should always be rejected"""
         # Setup
         classifier = SimpleClassifier()
-        patch_filter = PatchFilter(ReplyTypes.All)
+        patch_filter = PatchFilter(FilterMode.All, required_acks=2)
         patch_set = PatchSet([], classifier)
 
         # Execute
@@ -194,8 +194,8 @@ class TestPatchFilter(BaseTest):
         """Old patch sets should be rejected"""
         # Setup
         classifier = SimpleClassifier()
-        after = datetime(2022, 11, 1, tzinfo=timezone.utc)
-        patch_filter = PatchFilter(ReplyTypes.All, after=after)
+        since = datetime(2022, 11, 1, tzinfo=timezone.utc)
+        patch_filter = PatchFilter(FilterMode.All, required_acks=2, since=since)
         messages = self.get_messages("tests/data/october.mbox")
         patch_set = PatchSet(messages, classifier)
 
@@ -209,7 +209,7 @@ class TestPatchFilter(BaseTest):
         """All patches should be kept with all flag"""
         # Setup
         classifier = SimpleClassifier()
-        patch_filter = PatchFilter(ReplyTypes.All)
+        patch_filter = PatchFilter(FilterMode.All, required_acks=2)
         messages = self.get_messages("tests/data/october.mbox")
         patch_set = PatchSet(messages, classifier)
 
@@ -223,7 +223,7 @@ class TestPatchFilter(BaseTest):
         """All ack'd patches should be kept"""
         # Setup
         classifier = SimpleClassifier()
-        patch_filter = PatchFilter(ReplyTypes.Ack, reply_count=1)
+        patch_filter = PatchFilter(FilterMode.NeedsAcks, required_acks=2)
         should_keep = self.get_messages("tests/data/single_ack.mbox")
         should_reject = self.get_messages("tests/data/applied.mbox")
         should_keep_set = PatchSet(should_keep, classifier)
@@ -241,7 +241,7 @@ class TestPatchFilter(BaseTest):
         """All nak'd patches should be kept"""
         # Setup
         classifier = SimpleClassifier()
-        patch_filter = PatchFilter(ReplyTypes.Nak)
+        patch_filter = PatchFilter(FilterMode.Rejected, required_acks=2)
         should_keep = self.get_messages("tests/data/single_nak.mbox")
         should_reject = self.get_messages("tests/data/applied.mbox")
         should_keep_set = PatchSet(should_keep, classifier)
@@ -259,7 +259,7 @@ class TestPatchFilter(BaseTest):
         """All applied patches should be kept"""
         # Setup
         classifier = SimpleClassifier()
-        patch_filter = PatchFilter(ReplyTypes.Applied)
+        patch_filter = PatchFilter(FilterMode.Applied, required_acks=2)
         should_keep = self.get_messages("tests/data/applied.mbox")
         should_reject = self.get_messages("tests/data/single_ack.mbox")
         should_keep_set = PatchSet(should_keep, classifier)

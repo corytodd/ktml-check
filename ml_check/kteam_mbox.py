@@ -46,43 +46,68 @@ def periodic_mail_steps(start, end=datetime.utcnow()):
         current += relativedelta(months=1)
 
 
-class ReplyTypes(Enum):
-    Ack = "ack"
-    Nak = "nak"
-    Applied = "applied"
+class FilterMode(Enum):
     All = "all"
+    NeedsAcks = "needs_acks"
+    ReadyToApply = "ready_to_apply"
+    Applied = "applied"
+    Rejected = "rejected"
 
 
 class PatchFilter:
     def __init__(
         self,
-        reply_type: ReplyTypes = ReplyTypes.Ack,
-        reply_count: Optional[int] = 2,
-        after: Optional[datetime] = None,
+        mode: FilterMode,
+        required_acks: int,
+        since: Optional[datetime] = None,
     ):
-        self.after = datetime_min_tz(timezone.utc) if after is None else after
-        self.reply_type = reply_type
-        self.reply_count = reply_count
+        self._since = datetime_min_tz(timezone.utc) if since is None else since
+        self._mode = mode
+        self._required_acks = required_acks
         logger.debug(
-            "PatchFilter: reply_type=%s, reply_count=%s, after=%s",
-            reply_type,
-            reply_count,
-            self.after,
+            "PatchFilter: mode =%s, required_acks=%s, since=%s",
+            mode,
+            required_acks,
+            since,
         )
+        self._filter_fn = {
+            FilterMode.All: lambda _: True,
+            FilterMode.NeedsAcks: self._needs_acks,
+            FilterMode.ReadyToApply: self._ready_to_apply,
+            FilterMode.Applied: self._applied,
+            FilterMode.Rejected: self._rejected,
+        }[mode]
+
+    @property
+    def since(self) -> datetime:
+        return self._since
 
     def is_match(self, patch_set: PatchSet) -> bool:
         # ignore non-patches
         if patch_set.epoch_patch is None:
             return False
-        if patch_set.epoch_patch.timestamp < self.after:
+        if patch_set.epoch_patch.timestamp < self.since:
             return False
-        if self.reply_type == ReplyTypes.All:
-            return True
-        if self.reply_type == ReplyTypes.Ack:
-            return patch_set.count_of(Category.PatchAck) == self.reply_count
-        if self.reply_type == ReplyTypes.Nak:
-            return patch_set.count_of(Category.PatchNak) > 0
+        return self._filter_fn(patch_set)
+
+    def _needs_acks(self, patch_set: PatchSet) -> bool:
+        if patch_set.count_of(Category.PatchNak) > 0:
+            return False
+        return patch_set.count_of(Category.PatchAck) < self._required_acks
+
+    def _ready_to_apply(self, patch_set: PatchSet) -> bool:
+        if patch_set.count_of(Category.PatchNak) > 0:
+            return False
+        return patch_set.count_of(Category.PatchAck) >= self._required_acks
+
+    def _applied(self, patch_set: PatchSet) -> bool:
+        # TODO: does this behave when a single series on a multi-series patch is rejected?
         return patch_set.count_of(Category.PatchApplied) > 0
+
+    def _rejected(self, patch_set: PatchSet) -> bool:
+        if patch_set.count_of(Category.PatchApplied) > 0:
+            return False
+        return patch_set.count_of(Category.PatchNak) > 0
 
 
 @contextmanager
@@ -98,7 +123,7 @@ def safe_mbox(mbox_path):
 
 
 class KTeamMbox:
-    """Remote mbox utilitiy"""
+    """Remote mbox utility"""
 
     def __init__(self, classifier):
         self.classifier = classifier

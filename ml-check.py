@@ -38,7 +38,7 @@ from typing import Tuple
 
 from ml_check import config
 from ml_check.classifier import Category, SimpleClassifier
-from ml_check.kteam_mbox import KTeamMbox, PatchFilter, ReplyTypes
+from ml_check.kteam_mbox import FilterMode, KTeamMbox, PatchFilter
 from ml_check.logging import logger
 
 
@@ -162,20 +162,17 @@ def generate_stats(patch_sets):
     return stats.__dict__
 
 
-def main(days_back, patch_output, reply_type, reply_count, clear_cache, show_stats):
+def main(patch_filter, patch_output, clear_cache, show_stats):
     """Run mailing list checker
-    :param days_back: int how many days back from today to scan
+    :param patch_filter: PatchFilter to apply to message list
     :param patch_output: str if specified, emit .patches to this directory
-    :param reply_type: str which types of replies to dump
-    :param reply_count: int if reply_type == "ack" dump patches with this many of that type
     :param clear_cache: bool delete local cache (will force download all new mail)
     :param show_stats: bool print patch stats to stdout
     """
-    since = datetime.now(tz=timezone.utc) - timedelta(days=days_back)
 
     classifier = SimpleClassifier()
     kteam = KTeamMbox(classifier)
-    kteam.fetch_mail(since, clear_cache=clear_cache)
+    kteam.fetch_mail(patch_filter.since, clear_cache=clear_cache)
 
     # Ensure patch output directory exists and is clean
     if patch_output:
@@ -185,7 +182,6 @@ def main(days_back, patch_output, reply_type, reply_count, clear_cache, show_sta
         os.mkdir(patch_output)
 
     # Write filtered patches to disk
-    patch_filter = PatchFilter(reply_type, reply_count, after=since)
     patch_sets = list(kteam.filter_patches(patch_filter))
     for patch_set in sorted(patch_sets):
         if patch_output:
@@ -233,18 +229,13 @@ if __name__ == "__main__":
         + "Any patch existing in this location will be deleted.",
     )
     parser.add_argument(
-        "--all", action="store_true", help="Dump all patches regardless of review state"
+        "--mode",
+        choices=list(FilterMode),
+        default=FilterMode.NeedsAcks,
+        help="Which patches to show",
     )
     parser.add_argument(
-        "--naks",
-        action="store_true",
-        help="Dump all patches that have at least one nak",
-    )
-    parser.add_argument(
-        "--applied", action="store_true", help="Dump all patches that have been applied"
-    )
-    parser.add_argument(
-        "--acks", type=int, default=None, help="Dump patches with this many ACKs"
+        "--required-acks", type=int, default=2, help="Override the required ACK count"
     )
     parser.add_argument(
         "-s", "--show-stats", action="store_true", help="Print stats to stdout"
@@ -264,25 +255,14 @@ if __name__ == "__main__":
         print("WARNING: -w (--weeks-back) is deprecated use -d (--days) instead")
         days = 7 * args.weeks_back
 
-    reply_type = ReplyTypes.Ack
-    reply_count = 1
-    if args.all:
-        reply_type = ReplyTypes.All
-    elif args.acks is not None:
-        reply_type = ReplyTypes.Ack
-        reply_count = args.acks
-    elif args.naks:
-        reply_type = ReplyTypes.Nak
-    elif args.applied:
-        reply_type = ReplyTypes.Applied
+    since = datetime.now(tz=timezone.utc) - timedelta(days=days)
+    patch_filter = PatchFilter(args.mode, args.required_acks, since)
 
     ret = 1
     try:
         ret = main(
-            days,
+            patch_filter,
             args.patch_output,
-            reply_type,
-            reply_count,
             args.clear_cache,
             args.show_stats,
         )
