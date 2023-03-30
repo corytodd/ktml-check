@@ -23,11 +23,17 @@ the path to each patch in order.
 
 ## Usage
 
-    ml-check.py [-h] [-d DAYS_BACK] [--clear-cache] [-p PATCH_OUTPUT] [--mode MODE] [-v]
+    ml-check.py [-h] [-d DAYS_BACK] [--clear-cache] [-p PATCH_OUTPUT] [--mode MODE] [--ubuntu-checkpatch-path PATH] [-v]
 
 ## Env
 
     ML_CHECK_CACHE_DIR direct cache directory to this location
+
+## Ubuntu Check Patch
+
+You can use ubuntu-checkpatch directly from this tool. Tell ml-check where your copy of
+[ubuntu-checkpath](https://github.com/juergh/tools/blob/master/ubuntu-checkpatch) can be 
+found providing `--ubuntu-checkpatch-path`.
 
 ## Credits
 
