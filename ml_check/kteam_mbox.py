@@ -53,6 +53,9 @@ class FilterMode(Enum):
     Applied = "applied"
     Rejected = "rejected"
 
+    def __str__(self):
+        return self.value
+
 
 class PatchFilter:
     def __init__(

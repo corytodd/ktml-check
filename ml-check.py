@@ -203,6 +203,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=app_description,
         epilog=app_epilog,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         "-d",
@@ -223,6 +224,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--mode",
+        type=FilterMode,
         choices=list(FilterMode),
         default=FilterMode.NeedsAcks,
         help="Which patches to show",
