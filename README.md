@@ -17,7 +17,7 @@ the path to each patch in order.
 
 ## Setup
 
-    pip install -r requirements.txt
+    python setup.py install
 ## Usage
 
     ml-check [-h] [-d DAYS_BACK] [--clear-cache] [-p PATCH_OUTPUT] [--mode MODE] [--ubuntu-checkpatch-path PATH] [-v]

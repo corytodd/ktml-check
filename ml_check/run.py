@@ -228,7 +228,7 @@ def run(patch_filter, patch_output, clear_cache, show_stats, ubuntu_checkpatch_p
 
 
 def main():
-    app_description = """Kernel Team mailing-list checker"""
+    app_description = f"""Kernel Team mailing-list checker v{VERSION}"""
     app_epilog = (
         """Checks for patches requiring review on the public kernel mailing list"""
     )
