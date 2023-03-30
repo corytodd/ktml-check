@@ -25,9 +25,7 @@ from ml_check.logging import logger
 RE_EMAIL_STRICT = r"<([^\s\\]+)\sat\s([^\s\\]+)>"
 
 # Loose means we know this is a valid email
-RE_EMAIL_LOOSE = re.compile(
-    r"([^\s\\]+)\sat\s([^\s\\]+)\s\(([^\s\\]\s?)+\)", re.IGNORECASE
-)
+RE_EMAIL_LOOSE = re.compile(r"([^\s\\]+)\sat\s([^\s\\]+)\s\((.+)\)$", re.IGNORECASE)
 
 
 def parse_mail_date(date):
@@ -74,13 +72,9 @@ def parse_mail_references(raw):
     return references
 
 
-def demangle_email(raw, strict_mode=False):
-    """Mailman replaces user@example.com with user at example.com for all message fields. This function
-    reverses that operation.
+def demangle_email(raw):
+    """Undo Mailman mangle of message body
     :param raw: str content to demangle
-    :param strict_mode: bool True to treat as a replacement operation on content that
-    is not guaranteed to contain mangled email addresses, e.g. a message body. Set this
-    to false if you are parsing the From header.
     """
     result = raw
     if raw:
@@ -90,15 +84,27 @@ def demangle_email(raw, strict_mode=False):
             if m:
                 parts = m.groups()
                 result = "@".join(parts[:2])
-                if strict_mode:
-                    result = f"<{result}>"
+                result = f"<{result}>"
             return result
 
-        if strict_mode:
-            result = re.sub(RE_EMAIL_STRICT, replacer, raw)
-        else:
-            m = RE_EMAIL_LOOSE.match(raw)
-            result = replacer(m)
+        result = re.sub(RE_EMAIL_STRICT, replacer, raw)
+    return result
+
+
+def demangle_from(raw):
+    """Undo Mailman mangle of From header
+    This function turns `account at domain (User Name)` into
+    User Name <account@domain>
+    :param raw: str content to demangle
+    """
+    result = raw
+    if raw:
+        m = RE_EMAIL_LOOSE.match(raw)
+        if m and len(m.groups()) == 3:
+            account = m.group(1)
+            domain = m.group(2)
+            username = m.group(3)
+            result = f"{username} <{account}@{domain}>"
     return result
 
 
@@ -140,8 +146,8 @@ class Message:
         timestamp = parse_mail_date(mail.get("Date"))
         references = parse_mail_references(mail.get("References"))
 
-        body = demangle_email(mail.get_payload(), strict_mode=True)
-        sender = demangle_email(mail.get("From"))
+        body = demangle_email(mail.get_payload())
+        sender = demangle_from(mail.get("From"))
 
         message = None
         if message_id is not None and subject is not None and timestamp is not None:

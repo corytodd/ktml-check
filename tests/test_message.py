@@ -6,6 +6,7 @@ from ml_check.classifier import Category, SimpleClassifier
 from ml_check.message import (
     Message,
     demangle_email,
+    demangle_from,
     parse_mail_date,
     parse_mail_references,
 )
@@ -58,33 +59,47 @@ class TestMessageUtils(unittest.TestCase):
                 self.assertEqual(actual, expect)
 
     data_mangled_email = (
-        # Input, Strict mode, Expected
-        (None, False, None),
-        (None, True, None),
-        ("a at b.com (a b)", False, "a@b.com"),
-        ("a.c at b.com (a c)", False, "a.c@b.com"),
-        ("a <a at b.com>", True, "a <a@b.com>"),
-        ("a c <a.c at b.com>", True, "a c <a.c@b.com>"),
+        # Input, Expected
+        (None, None),
+        ("a <a at b.com>", "a <a@b.com>"),
+        ("a c <a.c at b.com>", "a c <a.c@b.com>"),
         (
             "Unrelated text\n\na c <a.c at b.com>",
-            True,
             "Unrelated text\n\na c <a.c@b.com>",
         ),
-        ("incomplete.loose", False, ""),
-        ("incomplete.strict", True, "incomplete.strict"),
-        ("this is loose\n\nmultiline", False, ""),
-        ("this is strict\n\nmultiline", True, "this is strict\n\nmultiline"),
+        ("incomplete.strict", "incomplete.strict"),
+        ("this is strict\n\nmultiline", "this is strict\n\nmultiline"),
     )
 
     def test_demangle_email(self):
         """Demangle email, parameterized testing"""
-        for data_in, strict, expect in self.data_mangled_email:
+        for data_in, expect in self.data_mangled_email:
             with self.subTest():
-                actual = demangle_email(data_in, strict)
+                actual = demangle_email(data_in)
                 self.assertEqual(
                     actual,
                     expect,
-                    f"demangle_email({data_in}, {strict}) {actual} != {expect}",
+                    f"demangle_email({data_in}) {actual} != {expect}",
+                )
+
+    data_mangled_from = (
+        # Input, Expected
+        (None, None),
+        ("a at b.com (a b)", "a b <a@b.com>"),
+        ("a.c at b.com (a c)", "a c <a.c@b.com>"),
+        ("incomplete.loose", "incomplete.loose"),
+        ("this is loose\n\nmultiline", "this is loose\n\nmultiline"),
+    )
+
+    def test_demangle_from(self):
+        """Demangle from, parameterized testing"""
+        for data_in, expect in self.data_mangled_from:
+            with self.subTest():
+                actual = demangle_from(data_in)
+                self.assertEqual(
+                    actual,
+                    expect,
+                    f"demangle_from({data_in}) {actual} != {expect}",
                 )
 
 
@@ -302,7 +317,7 @@ the unit is 0.5dBm in following:
 
         # Assert
         self.assertTrue(message is not None)
-        self.assertEqual(message.sender, "a.b@c.com")
+        self.assertEqual(message.sender, "a b <a.b@c.com>")
         self.assertEqual(
             message.subject, "[SRU][PATCH v2] UBUNTU: [Config] Enable mtune z16"
         )
