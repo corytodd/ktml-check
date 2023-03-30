@@ -205,13 +205,6 @@ if __name__ == "__main__":
         epilog=app_epilog,
     )
     parser.add_argument(
-        "-w",
-        "--weeks-back",
-        default=None,
-        type=int,
-        help="(DEPRECATED) How many weeks back to search",
-    )
-    parser.add_argument(
         "-d",
         "--days-back",
         default=config.DEFAULT_DAYS_BACK,
@@ -250,12 +243,7 @@ if __name__ == "__main__":
 
     logger.debug(args)
 
-    days = args.days_back
-    if args.weeks_back:
-        print("WARNING: -w (--weeks-back) is deprecated use -d (--days) instead")
-        days = 7 * args.weeks_back
-
-    since = datetime.now(tz=timezone.utc) - timedelta(days=days)
+    since = datetime.now(tz=timezone.utc) - timedelta(days=args.days_back)
     patch_filter = PatchFilter(args.mode, args.required_acks, since)
 
     ret = 1
