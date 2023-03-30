@@ -46,6 +46,8 @@ from ml_check.logging import logger
 
 ANSI_COLOR = re.compile(r"\033\[\d+m", re.VERBOSE)
 
+VERSION = "1.0"
+
 
 @dataclass
 class Stats:
@@ -189,7 +191,7 @@ def generate_stats(patch_sets):
     return stats.__dict__
 
 
-def main(patch_filter, patch_output, clear_cache, show_stats, ubuntu_checkpatch_path):
+def run(patch_filter, patch_output, clear_cache, show_stats, ubuntu_checkpatch_path):
     """Run mailing list checker
     :param patch_filter: PatchFilter to apply to message list
     :param patch_output: str if specified, emit .patches to this directory
@@ -225,7 +227,7 @@ def main(patch_filter, patch_output, clear_cache, show_stats, ubuntu_checkpatch_
     return 0
 
 
-if __name__ == "__main__":
+def main():
     app_description = """Kernel Team mailing-list checker"""
     app_epilog = (
         """Checks for patches requiring review on the public kernel mailing list"""
@@ -283,7 +285,7 @@ if __name__ == "__main__":
 
     ret = 1
     try:
-        ret = main(
+        ret = run(
             patch_filter,
             args.patch_output,
             args.clear_cache,
