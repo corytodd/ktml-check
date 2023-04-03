@@ -271,7 +271,10 @@ def main():
         "-v", "--verbose", action="store_true", help="Print more debug information"
     )
     parser.add_argument(
-        "-c", "--ubuntu-checkpatch-path", help="Path to ubuntu-check-patch"
+        "-c",
+        "--ubuntu-checkpatch-path",
+        default=os.getenv("ML_UBUNTU_CHECKPATCH"),
+        help="Path to ubuntu-check-patch",
     )
     args = parser.parse_args()
 

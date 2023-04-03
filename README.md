@@ -26,6 +26,8 @@ the path to each patch in order.
 
     ML_CHECK_CACHE_DIR direct cache directory to this location
 
+    ML_UBUNTU_CHECKPATCH path (including script name) to ubuntu-checkpatch
+
 ## Ubuntu Check Patch
 
 You can use ubuntu-checkpatch directly from this tool. Tell ml-check where your copy of
