@@ -74,8 +74,12 @@ def save_patch_set(out_directory, patch_set):
 
     # A newline delimited filter containing patch patches
     series_file_path = os.path.join(patch_dir, "series")
+    cover_letter = os.path.join(patch_dir, "cover_letter")
 
     with open(series_file_path, "w") as series:
+        if patch_set.epoch_patch:
+            with open(cover_letter, "w") as f:
+                f.write(patch_set.epoch_patch.generate_patch())
         for patch in patch_set.patches:
             patch_file = os.path.join(patch_dir, f"{patch.generate_patch_name()}.patch")
             with open(patch_file, "w") as f:
