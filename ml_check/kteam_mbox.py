@@ -32,6 +32,11 @@ def datetime_min_tz(tz):
     return result
 
 
+def datetime_month_delta(d1, d2):
+    """Returns months between d1 and d2 as an integer"""
+    return (d1.year - d2.year) * 12 + d1.month - d2.month
+
+
 def periodic_mail_steps(start, end=datetime.utcnow()):
     """Returns list of (year, month) tuples from starting datetime to ending datetime, inclusive
     :param start: datetime inclusive start year and month
@@ -41,7 +46,7 @@ def periodic_mail_steps(start, end=datetime.utcnow()):
     start = datetime(start.year, start.month, start.day)
     end = datetime(end.year, end.month, end.day)
     current = start
-    while current <= end:
+    while datetime_month_delta(end, current) >= 0:
         yield current.year, current.month
         current += relativedelta(months=1)
 
@@ -172,7 +177,7 @@ class KTeamMbox:
 
                 # Skip bygone YYYY.MM mail, those should not have any changes
                 if os.path.exists(cache_file):
-                    if year < now.year or month < now.month:
+                    if year < now.year or year == now.year and month < now.month:
                         logger.debug("skipping %s.%s", year, month_name)
                         continue
 

@@ -144,8 +144,8 @@ class TestKTeamMbox(unittest.TestCase):
                 classifier = SimpleClassifier()
                 kteam = KTeamMbox(classifier)
                 # Don't We mock back to January 2021
-                since = datetime(2021, 1, 1)
-                end = datetime(2022, 12, 1)
+                since = datetime(2021, 1, 20)
+                end = datetime(2022, 12, 3)
 
                 # Execute
                 kteam.fetch_mail(since, end)
