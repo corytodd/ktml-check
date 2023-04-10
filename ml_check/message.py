@@ -25,7 +25,21 @@ from ml_check.logging import logger
 RE_EMAIL_STRICT = r"<([^\s\\]+)\sat\s([^\s\\]+)>"
 
 # Loose means we know this is a valid email
-RE_EMAIL_LOOSE = re.compile(r"([^\s\\]+)\sat\s([^\s\\]+)\s\((.+)\)$", re.IGNORECASE)
+RE_EMAIL_LOOSE = re.compile(
+    r"""
+    # 1: any valid email user name including dots
+    ([^\s\\]+)
+    \sat\s
+    # 2: any valid domain name
+    ([^\s\\]+)
+    (?:\s
+        # 3: Optional, actual name of sender which may include spaces
+        \((.+)\)
+    )?
+    $
+""",
+    re.IGNORECASE | re.VERBOSE,
+)
 
 
 def parse_mail_date(date):
@@ -94,7 +108,9 @@ def demangle_email(raw):
 def demangle_from(raw):
     """Undo Mailman mangle of From header
     This function turns `account at domain (User Name)` into
-    User Name <account@domain>
+        User Name <account@domain>
+    If no (User Name) is specified, e.g. `account at domain` then
+        account@domain
     :param raw: str content to demangle
     """
     result = raw
@@ -104,7 +120,12 @@ def demangle_from(raw):
             account = m.group(1)
             domain = m.group(2)
             username = m.group(3)
-            result = f"{username} <{account}@{domain}>"
+            # Mailman may replace a missing username with the email address
+            # Don't use a username in these cases.
+            if username and not RE_EMAIL_LOOSE.match(username):
+                result = f"{username} <{account}@{domain}>"
+            else:
+                result = f"{account}@{domain}"
     return result
 
 

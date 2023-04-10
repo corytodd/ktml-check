@@ -89,6 +89,7 @@ class TestMessageUtils(unittest.TestCase):
         ("a.c at b.com (a c)", "a c <a.c@b.com>"),
         ("incomplete.loose", "incomplete.loose"),
         ("this is loose\n\nmultiline", "this is loose\n\nmultiline"),
+        ("foo.bar at example.com", "foo.bar@example.com"),
     )
 
     def test_demangle_from(self):
