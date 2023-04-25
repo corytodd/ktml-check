@@ -280,6 +280,12 @@ def main():
         default=os.getenv("ML_UBUNTU_CHECKPATCH"),
         help="Path to ubuntu-check-patch",
     )
+    parser.add_argument(
+        "-i",
+        "--ignore-acker",
+        action="append",
+        help="Ignore patches with acks from this email address (ACK mode only)",
+    )
     args = parser.parse_args()
 
     if args.verbose:
@@ -288,7 +294,7 @@ def main():
     logger.debug(args)
 
     since = datetime.now(tz=timezone.utc) - timedelta(days=args.days_back)
-    patch_filter = PatchFilter(args.mode, args.required_acks, since)
+    patch_filter = PatchFilter(args.mode, args.required_acks, args.ignore_acker, since)
 
     ret = 1
     try:

@@ -12,7 +12,7 @@ import shutil
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
 import networkx as nx
 import requests
@@ -67,15 +67,20 @@ class PatchFilter:
         self,
         mode: FilterMode,
         required_acks: int,
+        ignored_ackers: List[str] = None,
         since: Optional[datetime] = None,
     ):
         self._since = datetime_min_tz(timezone.utc) if since is None else since
         self._mode = mode
         self._required_acks = required_acks
+        if ignored_ackers is None:
+            ignored_ackers = []
+        self._ignored_ackers = ignored_ackers
         logger.debug(
-            "PatchFilter: mode =%s, required_acks=%s, since=%s",
+            "PatchFilter: mode =%s, required_acks=%s, ignore=%s, since=%s",
             mode,
             required_acks,
+            ignored_ackers,
             since,
         )
         self._filter_fn = {
@@ -103,6 +108,9 @@ class PatchFilter:
             return False
         if patch_set.count_of(Category.PatchApplied) > 0:
             return False
+        for email in self._ignored_ackers:
+            if any([email in p.sender for p in patch_set.acks]):
+                return False
         return patch_set.count_of(Category.PatchAck) < self._required_acks
 
     def _ready_to_apply(self, patch_set: PatchSet) -> bool:
