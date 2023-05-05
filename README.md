@@ -17,6 +17,14 @@ the path to each patch in order.
 
 ## Setup
 
+We recommend using a virtual environment. Starting by install `python3-venv`.
+
+    apt install python3-venv
+
+Then create and activate your environment
+
+    python3 -m venv venv
+    source venv/bin/activate
     python setup.py install
 ## Usage
 
