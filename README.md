@@ -1,4 +1,4 @@
-# ml-check
+# ktml-check
 
 Check the kernel-team mailing list for patches that need review.
 
@@ -28,7 +28,7 @@ Then create and activate your environment
     python setup.py install
 ## Usage
 
-    ml-check [-h] [-d DAYS_BACK] [--clear-cache] [-p PATCH_OUTPUT] [--mode MODE] [--ubuntu-checkpatch-path PATH] [-v]
+    ktml-check [-h] [-d DAYS_BACK] [--clear-cache] [-p PATCH_OUTPUT] [--mode MODE] [--ubuntu-checkpatch-path PATH] [-v]
 
 ## Env
 
@@ -38,7 +38,7 @@ Then create and activate your environment
 
 ## Ubuntu Check Patch
 
-You can use ubuntu-checkpatch directly from this tool. Tell ml-check where your copy of
+You can use ubuntu-checkpatch directly from this tool. Tell ktml-check where your copy of
 [ubuntu-checkpath](https://github.com/juergh/tools/blob/master/ubuntu-checkpatch) can be 
 found providing `--ubuntu-checkpatch-path`.
 

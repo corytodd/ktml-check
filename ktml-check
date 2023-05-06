@@ -4,7 +4,7 @@
 import sys
 
 if sys.version_info < (3, 8):
-    sys.stderr.write("ERROR: ml-check requires Python 3.8 or higher\n")
+    sys.stderr.write("ERROR: ktml-check requires Python 3.8 or higher\n")
     sys.exit(1)
 
 from ml_check import run

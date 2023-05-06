@@ -10,12 +10,12 @@ if sys.version_info < (3, 8):
     sys.exit(1)
 
 setup(
-    name="ml-check",
     version=VERSION,
+    name="ktml-check",
     author="Cory Todd",
     author_email="cory.todd@canonical.com",
     description="",
-    url="https://github.com/corytodd/ml-check",
+    url="https://github.com/corytodd/ktml-check",
     license="GPLv2",
     long_description=open(
         os.path.join(os.path.dirname(__file__), "README.md"), "r"
@@ -25,7 +25,7 @@ setup(
     include_package_data=True,
     entry_points={
         "console_scripts": [
-            "ml-check = ml_check.run:main",
+            "ktml-check = ml_check.run:main",
         ]
     },
     classifiers=[

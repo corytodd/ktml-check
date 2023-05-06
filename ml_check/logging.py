@@ -1,4 +1,4 @@
 import logging
 
-logger = logging.getLogger("ml-check")
+logger = logging.getLogger("ktml-check")
 logger.addHandler(logging.StreamHandler())

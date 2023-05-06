@@ -249,7 +249,7 @@ def main():
         help="How many days back to search",
     )
     parser.add_argument(
-        "--clear-cache", action="store_true", help="Clear local ml-check cache"
+        "--clear-cache", action="store_true", help="Clear local ktml-check cache"
     )
     parser.add_argument(
         "-p",

@@ -7,8 +7,7 @@ MONTHLY_URL = "https://lists.ubuntu.com/archives/kernel-team/{year}-{month}.txt.
 # There are no divs on the page that we can link to.
 THREAD_URL = "https://lists.ubuntu.com/archives/kernel-team/{year}-{month}/thread.html"
 
-
-CACHE_DIRECTORY = "~/.cache/ml-check"
+CACHE_DIRECTORY = "~/.cache/ktml-check"
 
 # Compatible with ISO 8601 sorting
 MONTHLY_CACHE = "{year:04d}-{month:02d}.mail_cache"
