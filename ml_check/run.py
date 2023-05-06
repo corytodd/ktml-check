@@ -254,7 +254,7 @@ def main():
     parser.add_argument(
         "-p",
         "--patch-output",
-        default="out",
+        default="ktml-patches",
         help="Dump patches to a file named $COVER_LETTER_SUBJECT/$PATCH_SUBJECT.patch in this directory. "
         + "Any patch existing in this location will be deleted.",
     )

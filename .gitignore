@@ -1,5 +1,5 @@
 venv/
-out/
+ktml-patches/
 coverage/
 *.pyc
 *.egg-info/
