@@ -192,8 +192,13 @@ class KTeamMbox:
                 logger.info("downloading %s.%s...", year, month_name)
                 remote_file = config.MONTHLY_URL.format(year=year, month=month_name)
 
-                r = requests.get(remote_file)
-                if r.status_code != 200:
+                r = None
+                try:
+                    r = requests.get(remote_file)
+                except requests.ConnectionError:
+                    logger.error("failed to connect to server.")
+
+                if not r or r.status_code != 200:
                     logger.warning("failed to download %s.%s", year, month_name)
                     continue
 
