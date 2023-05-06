@@ -116,6 +116,7 @@ def clean_str(b):
 
 
 def analyze_patches(patch_dir, ubuntu_checkpatch):
+    logger.debug("Analyzing %s", patch_dir)
     ubuntu_checkpatch = os.path.expanduser(ubuntu_checkpatch)
     results_file = os.path.join(patch_dir, "check-patch.txt")
     pattern = f"{patch_dir}/*.patch"
@@ -203,6 +204,8 @@ def run(patch_filter, patch_output, clear_cache, show_stats, ubuntu_checkpatch_p
     :param show_stats: bool print patch stats to stdout
     :param ubuntu_checkpatch_path: str path to ubuntu_check_patch
     """
+    if os.path.exists(ubuntu_checkpatch_path):
+        logger.info("Found %s, patches will be analyzed", ubuntu_checkpatch_path)
 
     classifier = SimpleClassifier()
     kteam = KTeamMbox(classifier)
@@ -217,6 +220,7 @@ def run(patch_filter, patch_output, clear_cache, show_stats, ubuntu_checkpatch_p
 
     # Write filtered patches to disk
     patch_sets = list(kteam.filter_patches(patch_filter))
+    logger.info("Found %d patch sets", len(patch_sets))
     for patch_set in sorted(patch_sets):
         if patch_output:
             patch_dir = save_patch_set(patch_output, patch_set)
