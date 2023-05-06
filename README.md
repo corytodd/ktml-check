@@ -19,7 +19,7 @@ the path to each patch in order.
 
 The easiest way to use this tool is to install the snap.
 
-    snap install ktml-check --channel edge
+    snap install ktml-check --channel beta
 
 ## Local Setup
 
