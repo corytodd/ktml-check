@@ -7,3 +7,4 @@ unidiff
 pytest
 pytest-cov
 python-dateutil
+launchpadlib

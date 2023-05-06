@@ -1,0 +1,24 @@
+name: ktml-check
+summary: Kernel Team mailing list utility
+description: |
+      Query and report the status of patches on the public Canonical
+      Kernel Team mailing list.
+version: git
+base: core20
+compression: lzo 
+grade: devel # 'stable' 'devel'
+confinement: devmode # 'strict' 'devmode'
+architectures: [amd64]
+
+apps:
+  ktml-check:
+    command: bin/ktml-check
+    plugs: [home, network, network-bind]
+
+parts:
+  ktml-check:
+    plugin: python
+    source: .
+    source-type: local
+    requirements: 
+      - requirements.txt

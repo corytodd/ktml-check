@@ -1,16 +1,8 @@
 import os
-import sys
 
 from setuptools import setup
 
-from ml_check.run import VERSION
-
-if sys.version_info < (3, 8):
-    print("ml-check requires Python 3.8 or higher")
-    sys.exit(1)
-
 setup(
-    version=VERSION,
     name="ktml-check",
     author="Cory Todd",
     author_email="cory.todd@canonical.com",
@@ -35,6 +27,20 @@ setup(
         "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
         "Operating System :: POSIX :: Linux",
     ],
-    install_requires=["networkx", "requests", "unidiff"],
+    install_requires=[
+        "networkx",
+        "requests",
+        "unidiff",
+        "pre-commit",
+        "isort",
+        "black",
+        "networkx",
+        "requests",
+        "unidiff",
+        "pytest",
+        "pytest-cov",
+        "python-dateutil",
+        "launchpadlib",
+    ],
     zip_safe=False,
 )
