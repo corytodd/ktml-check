@@ -15,9 +15,16 @@ For each patchset, a folder matching the name of the first patch is created and 
 patches will be dumped here. Also included is a file called series which enumerates 
 the path to each patch in order.
 
-## Setup
+## Snap Installation
 
-We recommend using a virtual environment. Starting by install `python3-venv`.
+The easiest way to use this tool is to install the snap.
+
+    snap install ktml-check --channel edge
+
+## Local Setup
+
+We recommend using a virtual environment for local development.Start by 
+installing `python3-venv`.
 
     apt install python3-venv
 
