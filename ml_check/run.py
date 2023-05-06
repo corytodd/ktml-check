@@ -288,7 +288,8 @@ def main():
         "-i",
         "--ignore-acker",
         action="append",
-        help="Ignore patches with acks from this email address (ACK mode only)",
+        help="ACK MODE: Ignore patches with acks from these email addresses."
+        + "This option may be repeated.",
     )
     args = parser.parse_args()
 
