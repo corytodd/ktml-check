@@ -7,7 +7,7 @@ version: git
 base: core20
 compression: lzo 
 grade: devel # 'stable' 'devel'
-confinement: devmode # 'strict' 'devmode'
+confinement: strict # 'strict' 'devmode'
 architectures: [amd64]
 
 apps:
