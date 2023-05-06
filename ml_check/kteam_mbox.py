@@ -12,6 +12,7 @@ import shutil
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from enum import Enum
+from pathlib import Path
 from typing import List, Optional
 
 import networkx as nx
@@ -147,10 +148,12 @@ class KTeamMbox:
 
     def __init__(self, classifier):
         self.classifier = classifier
-        cache_dir = os.getenv("ML_CHECK_CACHE_DIR", config.CACHE_DIRECTORY)
-        self.cache_dir = os.path.expanduser(cache_dir)
-        if not os.path.exists(self.cache_dir):
-            os.mkdir(self.cache_dir)
+        cache_dir = Path(
+            os.getenv("ML_CHECK_CACHE_DIR", config.CACHE_DIRECTORY)
+        ).expanduser()
+        if not cache_dir.exists():
+            cache_dir.mkdir(parents=True, exist_ok=True)
+        self.cache_dir = str(cache_dir)
         with open(os.path.join(self.cache_dir, "last_run"), "w") as f:
             f.write(f"{datetime.now()}")
 
