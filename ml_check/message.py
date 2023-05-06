@@ -9,7 +9,7 @@ the message category could change. That's what we call global classification. Th
 handled from within the PatchSet class. For best results, messages should be collected
 into PatchSets and consumed from there.
 
-In otherwords, you probably don't want to be creating Message types directly.
+In other words, you probably don't want to be creating Message types directly.
 """
 
 import calendar

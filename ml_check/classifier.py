@@ -6,7 +6,7 @@ Emails are difficult to characterize. There are rules but
 not everyone follows them and mistakes can be made. A human
 can usually figure out what is supposed to be a patch, the
 context of an ACK/NAK/APPLIED, etc. Doing this programmatically
-however, can be unrealiable in real life. These classes are 
+however, can be unreliable in real life. These classes are 
 attempts at making email classification more reliable.
 """
 
@@ -15,13 +15,7 @@ from abc import abstractmethod
 from enum import Flag, auto
 from typing import List
 
-try:
-    from unidiff import PatchSet
-except ModuleNotFoundError:
-    print(
-        "unidiff required now sorry, the requirements changed."
-        "pip install -r requirements.txt"
-    )
+from unidiff import PatchSet
 
 # Subject line pattern patch for patches
 RE_PATCH = re.compile(
@@ -134,9 +128,9 @@ class SimpleClassifier(MessageClassifier):
         #
         # This might be a cover letter which has all the attributes
         # but would be lacking an actual patch.
-        is_cover_leter = self._is_cover_letter(message)
+        is_cover_letter = self._is_cover_letter(message)
 
-        return any([is_git_send, is_content_patch, is_cover_leter])
+        return any([is_git_send, is_content_patch, is_cover_letter])
 
     def _is_git_send_email(self, message):
         return "git-send-email" in message.message_id

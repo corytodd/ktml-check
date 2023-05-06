@@ -132,7 +132,7 @@ class PatchFilter:
 
 @contextmanager
 def safe_mbox(mbox_path):
-    """Allow using with semantics for mbox files"""
+    """Allow using `with` semantics for mbox files"""
     mbox = None
     try:
         mbox = mailbox.mbox(mbox_path)

@@ -174,5 +174,5 @@ class PatchSet:
         return self.epoch_patch > other.epoch_patch
 
     def __len__(self):
-        """Returns count of messagse in entire thread"""
+        """Returns count of messages in entire thread"""
         return len(self.thread)
