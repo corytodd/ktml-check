@@ -39,14 +39,14 @@ from datetime import datetime, timedelta, timezone
 from statistics import median
 from typing import Tuple
 
+import pkg_resources
+
 from ml_check import config
 from ml_check.classifier import Category, SimpleClassifier
 from ml_check.kteam_mbox import FilterMode, KTeamMbox, PatchFilter
 from ml_check.logging import logger
 
 ANSI_COLOR = re.compile(r"\033\[\d+m", re.VERBOSE)
-
-VERSION = "1.0"
 
 
 @dataclass
@@ -232,7 +232,8 @@ def run(patch_filter, patch_output, clear_cache, show_stats, ubuntu_checkpatch_p
 
 
 def main():
-    app_description = f"""Kernel Team mailing-list checker v{VERSION}"""
+    version = pkg_resources.require("ktml-check")[0].version
+    app_description = f"""Kernel Team mailing-list checker v{version}"""
     app_epilog = (
         """Checks for patches requiring review on the public kernel mailing list"""
     )
@@ -275,6 +276,9 @@ def main():
         "-v", "--verbose", action="store_true", help="Print more debug information"
     )
     parser.add_argument(
+        "--version", action="store_true", help="Print more version information and exit"
+    )
+    parser.add_argument(
         "-c",
         "--ubuntu-checkpatch-path",
         default=os.getenv("ML_UBUNTU_CHECKPATCH"),
@@ -287,6 +291,10 @@ def main():
         help="Ignore patches with acks from this email address (ACK mode only)",
     )
     args = parser.parse_args()
+
+    if args.version:
+        print(version)
+        sys.exit()
 
     if args.verbose:
         logger.setLevel(logging.DEBUG)

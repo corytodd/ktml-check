@@ -2,7 +2,10 @@ import os
 
 from setuptools import setup
 
+from tools.version import determine_version
+
 setup(
+    version=determine_version(),
     name="ktml-check",
     author="Cory Todd",
     author_email="cory.todd@canonical.com",
