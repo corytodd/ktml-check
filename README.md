@@ -17,7 +17,7 @@ the path to each patch in order.
 
 ## Snap Installation
 
-The easiest way to use this tool is to install the snap.
+The easiest way to use this tool is to install the [snap](https://snapcraft.io/ktml-check).
 
     snap install ktml-check --channel beta
 
@@ -46,7 +46,7 @@ Then create and activate your environment
 ## Ubuntu Check Patch
 
 You can use ubuntu-checkpatch directly from this tool. Tell ktml-check where your copy of
-[ubuntu-checkpath](https://github.com/juergh/tools/blob/master/ubuntu-checkpatch) can be 
+[ubuntu-checkpatch](https://github.com/juergh/tools/blob/master/ubuntu-checkpatch) can be 
 found providing `--ubuntu-checkpatch-path`.
 
 ## Development
