@@ -18,8 +18,7 @@ apps:
 parts:
   ktml-check:
     plugin: python
-    source: .
-    source-type: local
+    source: https://github.com/corytodd/ktml-check.git
     requirements: 
       - requirements.txt
 

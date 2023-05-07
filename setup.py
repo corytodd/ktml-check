@@ -34,16 +34,20 @@ setup(
         "networkx",
         "requests",
         "unidiff",
-        "pre-commit",
-        "isort",
-        "black",
         "networkx",
         "requests",
         "unidiff",
-        "pytest",
-        "pytest-cov",
         "python-dateutil",
         "launchpadlib",
     ],
+    extras_require={
+        "dev": [
+            "pytest",
+            "pytest-cov",
+            "pre-commit",
+            "isort",
+            "black",
+        ]
+    },
     zip_safe=False,
 )
