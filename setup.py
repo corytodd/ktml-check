@@ -2,10 +2,9 @@ import os
 
 from setuptools import setup
 
-from tools.version import determine_version
+from ml_check import __version__ as VERSION
 
 setup(
-    version=determine_version(),
     name="ktml-check",
     author="Cory Todd",
     author_email="cory.todd@canonical.com",
@@ -17,6 +16,7 @@ setup(
     ).read(),
     long_description_content_type="text/markdown",
     packages=["ml_check"],
+    version=VERSION,
     include_package_data=True,
     entry_points={
         "console_scripts": [
