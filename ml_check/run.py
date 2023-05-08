@@ -39,8 +39,7 @@ from datetime import datetime, timedelta, timezone
 from statistics import median
 from typing import Tuple
 
-import pkg_resources
-
+from ml_check import __version__ as VERSION
 from ml_check import config
 from ml_check.classifier import Category, SimpleClassifier
 from ml_check.kteam_mbox import FilterMode, KTeamMbox, PatchFilter
@@ -236,8 +235,7 @@ def run(patch_filter, patch_output, clear_cache, show_stats, ubuntu_checkpatch_p
 
 
 def main():
-    version = pkg_resources.require("ktml-check")[0].version
-    app_description = f"""Kernel Team mailing-list checker v{version}"""
+    app_description = f"""Kernel Team mailing-list checker v{VERSION}"""
     app_epilog = (
         """Checks for patches requiring review on the public kernel mailing list"""
     )
@@ -298,7 +296,7 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        print(version)
+        print(VERSION)
         sys.exit()
 
     if args.verbose:

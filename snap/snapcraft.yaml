@@ -3,7 +3,7 @@ summary: Kernel Team mailing list utility
 description: |
       Query and report the status of patches on the public Canonical
       Kernel Team mailing list.
-version: git
+adopt-info: ktml-check
 base: core20
 compression: lzo 
 grade: stable # 'stable' 'devel'
@@ -22,4 +22,8 @@ parts:
     source-type: local
     requirements: 
       - requirements.txt
-
+    override-build: |
+      snapcraftctl pull
+      VERSION="$(git --work-tree "$SNAPCRAFT_PROJECT_DIR" describe --tags)"
+      snapcraftctl build
+      snapcraftctl set-version "$VERSION"
