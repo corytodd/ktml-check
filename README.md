@@ -1,5 +1,7 @@
 # ktml-check
 
+[![snapcraft](https://snapcraft.io/ktml-check/badge.svg)](https://snapcraft.io/ktml-check) 
+
 Check the kernel-team mailing list for patches that need review.
 
 Everyone has their own way of monitoring the mailing list. The goal of this tool 
