@@ -39,9 +39,13 @@ Then create and activate your environment
 
 ## Env
 
-    ML_CHECK_CACHE_DIR direct cache directory to this location
+**ML_CHECK_CACHE_DIR**
+  
+  direct cache directory to this location
 
-    ML_UBUNTU_CHECKPATCH path (including script name) to ubuntu-checkpatch
+**ML_UBUNTU_CHECKPATCH**
+  
+  path (including script name) to ubuntu-checkpatch
 
 ## Ubuntu Check Patch
 
