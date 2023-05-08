@@ -35,7 +35,15 @@ Then create and activate your environment
     pip install -r requirements.txt
 ## Usage
 
-    ktml-check [-h] [-d DAYS_BACK] [--clear-cache] [-p PATCH_OUTPUT] [--mode MODE] [--ubuntu-checkpatch-path PATH] [-v]
+    ktml-check [-h|--help] 
+               [-v|--verbose]
+               [-d|--days-back DAYS]
+               [-p|--patch-output DIRECTORY]
+               [-s|--show-stats]
+               [-i|--ignore-acker ACKER]
+               [-m|--mode MODE]
+               [-c|--ubuntu-checkpatch-path PATH]
+               [--clear-cache]
 
 ## Env
 

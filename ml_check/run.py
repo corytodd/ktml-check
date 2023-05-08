@@ -262,6 +262,7 @@ def main():
         + "Any patch existing in this location will be deleted.",
     )
     parser.add_argument(
+        "-m",
         "--mode",
         type=FilterMode,
         choices=list(FilterMode),
