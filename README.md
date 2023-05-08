@@ -32,16 +32,20 @@ Then create and activate your environment
 
     python3 -m venv venv
     source venv/bin/activate
-    python setup.py install
+    pip install -r requirements.txt
 ## Usage
 
     ktml-check [-h] [-d DAYS_BACK] [--clear-cache] [-p PATCH_OUTPUT] [--mode MODE] [--ubuntu-checkpatch-path PATH] [-v]
 
 ## Env
 
-    ML_CHECK_CACHE_DIR direct cache directory to this location
+**ML_CHECK_CACHE_DIR**
+  
+  direct cache directory to this location
 
-    ML_UBUNTU_CHECKPATCH path (including script name) to ubuntu-checkpatch
+**ML_UBUNTU_CHECKPATCH**
+  
+  path (including script name) to ubuntu-checkpatch
 
 ## Ubuntu Check Patch
 
