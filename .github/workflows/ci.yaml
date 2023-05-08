@@ -24,4 +24,4 @@ jobs:
       - name: Lint
         run: pre-commit run --all
       - name: Tests
-        run: python3 -m unittest
+        run: pytest
